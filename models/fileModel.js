@@ -48,5 +48,4 @@ const File = sequelize.define('File', {
 File.belongsTo(Teacher, {foreignKey: 'teacher_id', as: 'teacher'});
 File.belongsTo(Subject, {foreignKey: 'subject_id', as: 'subject'});
 
-
 module.exports = File;
