@@ -7,6 +7,9 @@ const { UniqueConstraintError } = require('sequelize');
 
 const uploadSingleFile = async (req, res) => {
     try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
         const { teacher_id, subject_id } = req.body;
         const fileName = req.file.originalname;
         const filePath = req.file.path;
@@ -15,13 +18,6 @@ const uploadSingleFile = async (req, res) => {
         if (!teacher || !subject) {
             return res.status(404).json({ message: 'Teacher or subject not found' });
         }
-        if (!req.file) {
-            return res.status(400).json({ message: 'No file uploaded' });
-        }
-        console.log("Teacher ID:", teacher_id);
-        console.log("Subject ID:", subject_id);
-        console.log("File Path:", filePath);
-        console.log("File Original Name:", fileName);
         const file = await File.create({
             filename: fileName,
             filepath: filePath,
@@ -33,7 +29,6 @@ const uploadSingleFile = async (req, res) => {
         if (error instanceof UniqueConstraintError) {
             return res.status(400).json({ error: 'A file with this name already exists for this teacher and subject.' });
         }
-        console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
 }
@@ -62,7 +57,6 @@ const getSingleFile = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
 
@@ -77,12 +71,14 @@ const renameSingleFile = async (req, res) => {
             return res.status(400).json({ message: 'Filename must be alphanumeric and can only contain underscores (_) and hyphens (-)' });
         }
         const file = await File.findByPk(fileId);
+        
         if (!file) {
             return res.status(404).json({ message: 'File not found' });
         }
         if (file.teacher_id !== teacher_id) {
             return res.status(401).json({ message: 'Unauthorized file access' });
         }
+
         const extension = path.extname(file.filename);
         const newFullName = `${new_filename}${extension}`;
 
@@ -102,7 +98,6 @@ const renameSingleFile = async (req, res) => {
         res.status(200).json({ message: 'File renamed successfully', file });
 
     } catch (error) {
-        console.error(error);
         if (error instanceof UniqueConstraintError) {
             return res.status(400).json({ message: 'A file with this name already exists for this teacher and subject.' });
         }
@@ -135,7 +130,6 @@ const deleteSingleFile = async (req, res) => {
             res.status(200).json({ message: 'File deleted successfully' });
         });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };

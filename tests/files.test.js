@@ -1,18 +1,32 @@
 const request = require('supertest');
 const app = require('../app');
-const { File, Teacher, Subject } = require('../models');
+const File = require('../models/fileModel');
+const Teacher = require('../models/teacherModel');
+const Subject = require('../models/subjectModel');
 const fs = require('fs');
+const path = require('path');
 const { UniqueConstraintError } = require('sequelize');
 
-jest.mock('fs');
+jest.mock('bcrypt', () => require('bcryptjs'));
+
 
 describe('File Controller', () => {
     beforeEach(() => {
-        jest.clearAllMocks(); 
+        jest.clearAllMocks();
+        if (!fs.existsSync('uploads')) {
+            fs.mkdirSync('uploads');
+        }
+        fs.writeFileSync(path.join('uploads', 'testfile.txt'), 'Test file content');
+    });
+
+    afterAll(() => {
+        fs.readdirSync('uploads').forEach(file => {
+            fs.unlinkSync(path.join('uploads', file));
+        });
     });
 
     describe('uploadSingleFile', () => {
-        it.only('should upload a file successfully', async () => {
+        it('should upload a file successfully', async () => {
             jest.spyOn(Teacher, 'findByPk').mockResolvedValue({ id: 1 });
             jest.spyOn(Subject, 'findByPk').mockResolvedValue({ id: 1 });
             jest.spyOn(File, 'create').mockResolvedValue({
@@ -24,8 +38,8 @@ describe('File Controller', () => {
             });
 
             const response = await request(app)
-                .post('/files/upload-single')
-                .attach('file', 'path/to/local/testfile.txt')
+                .post('/file/upload-single')
+                .attach('file', 'uploads/testfile.txt')
                 .field('teacher_id', 1)
                 .field('subject_id', 1);
 
@@ -37,8 +51,8 @@ describe('File Controller', () => {
             jest.spyOn(Teacher, 'findByPk').mockResolvedValue(null);
 
             const response = await request(app)
-                .post('/files/upload-single')
-                .attach('file', 'path/to/local/testfile.txt')
+                .post('/file/upload-single')
+                .attach('file', 'uploads/testfile.txt')
                 .field('teacher_id', 9999)
                 .field('subject_id', 1);
 
@@ -51,7 +65,7 @@ describe('File Controller', () => {
             jest.spyOn(Subject, 'findByPk').mockResolvedValue({ id: 1 });
 
             const response = await request(app)
-                .post('/files/upload-single')
+                .post('/file/upload-single')
                 .field('teacher_id', 1)
                 .field('subject_id', 1);
 
@@ -65,8 +79,8 @@ describe('File Controller', () => {
             jest.spyOn(File, 'create').mockRejectedValue(new UniqueConstraintError());
 
             const response = await request(app)
-                .post('/files/upload-single')
-                .attach('file', 'path/to/local/testfile.txt')
+                .post('/file/upload-single')
+                .attach('file', 'uploads/testfile.txt')
                 .field('teacher_id', 1)
                 .field('subject_id', 1);
 
@@ -78,14 +92,43 @@ describe('File Controller', () => {
             jest.spyOn(Teacher, 'findByPk').mockRejectedValue(new Error('Internal error'));
 
             const response = await request(app)
-                .post('/files/upload-single')
-                .attach('file', 'path/to/local/testfile.txt')
+                .post('/file/upload-single')
+                .attach('file', 'uploads/testfile.txt')
                 .field('teacher_id', 1)
                 .field('subject_id', 1);
 
             expect(response.status).toBe(500);
             expect(response.body.message).toBe('Internal server error');
         });
+
+        it('should return 500 if file creation fails in database', async () => {
+            jest.spyOn(Teacher, 'findByPk').mockResolvedValue({ id: 1 });
+            jest.spyOn(Subject, 'findByPk').mockResolvedValue({ id: 1 });
+            jest.spyOn(File, 'create').mockRejectedValue(new Error('Database error'));
+        
+            const response = await request(app)
+                .post('/file/upload-single')
+                .attach('file', 'uploads/testfile.txt')
+                .field('teacher_id', 1)
+                .field('subject_id', 1);
+        
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('Internal server error');
+        });
+
+        it('should return 400 if no file is uploaded', async () => {
+            jest.spyOn(Teacher, 'findByPk').mockResolvedValue({ id: 1 });
+            jest.spyOn(Subject, 'findByPk').mockResolvedValue({ id: 1 });
+        
+            const response = await request(app)
+                .post('/file/upload-single')
+                .field('teacher_id', 1)
+                .field('subject_id', 1);
+        
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('No file uploaded');
+        });
+        
     });
 
     // Tests for getSingleFile
@@ -97,21 +140,19 @@ describe('File Controller', () => {
                 filepath: 'uploads/testfile.txt',
                 teacher_id: 1,
             });
-            const downloadSpy = jest.spyOn(fs, 'readFile').mockImplementation((path, name, cb) => cb());
 
             const response = await request(app)
-                .get('/files/1')
+                .get('/file/1')
                 .send({ teacher_id: 1 });
 
             expect(response.status).toBe(200);
-            expect(downloadSpy).toHaveBeenCalledWith(expect.stringContaining('uploads/testfile.txt'), 'testfile.txt', expect.any(Function));
         });
 
         it('should return 404 if file is not found', async () => {
             jest.spyOn(File, 'findByPk').mockResolvedValue(null);
 
             const response = await request(app)
-                .get('/files/9999')
+                .get('/file/9999')
                 .send({ teacher_id: 1 });
 
             expect(response.status).toBe(404);
@@ -122,7 +163,7 @@ describe('File Controller', () => {
             jest.spyOn(File, 'findByPk').mockResolvedValue({ teacher_id: 2 });
 
             const response = await request(app)
-                .get('/files/1')
+                .get('/file/1')
                 .send({ teacher_id: 1 });
 
             expect(response.status).toBe(401);
@@ -133,27 +174,101 @@ describe('File Controller', () => {
             jest.spyOn(File, 'findByPk').mockRejectedValue(new Error('Internal error'));
 
             const response = await request(app)
-                .get('/files/1')
+                .get('/file/1')
                 .send({ teacher_id: 1 });
 
             expect(response.status).toBe(500);
             expect(response.body.message).toBe('Internal server error');
         });
+
+        it('should return 500 if there is an error serving the file', async () => {
+            jest.spyOn(File, 'findByPk').mockResolvedValue({
+                id: 1,
+                filename: 'testfile.txt',
+                filepath: 'uploads/testfile.txt',
+                teacher_id: 1,
+                subject_id1: 1
+            });
+        
+            app.response.download = jest.fn((path, name, callback) => {
+                callback(new Error('Error serving file'));
+            });
+        
+            const response = await request(app)
+                .get('/file/1')
+                .send({ teacher_id: 1 });
+        
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('Error serving file');
+        });
+
+        it('should return 500 if there is an error serving the file', async () => {
+            jest.spyOn(File, 'findByPk').mockResolvedValue({
+                id: 1,
+                filename: 'testfile.txt',
+                filepath: 'uploads/testfile.txt',
+                teacher_id: 1,
+                subject_id: 1
+            });
+        
+            app.response.download = jest.fn((path, name, callback) => {
+                callback(new Error('Error serving file'));
+            });
+        
+            const response = await request(app)
+                .get('/file/1')
+                .send({ teacher_id: 1 });
+        
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('Error serving file');
+        });
+        
+        it('should return 400 if a file with the new name already exists for the teacher and subject', async () => {
+            jest.spyOn(File, 'findByPk').mockResolvedValue({
+                id: 1,
+                filename: 'testfile.txt',
+                filepath: 'uploads/testfile.txt',
+                teacher_id: 1,
+                subject_id: 1,
+                save: jest.fn().mockResolvedValue(),
+            });
+        
+            jest.spyOn(File, 'findOne').mockResolvedValue({
+                id: 2,
+                filename: 'newname.txt',
+                teacher_id: 1,
+                subject_id: 1,
+            });
+        
+            const response = await request(app)
+                .put('/file/update-single/1')
+                .send({ new_filename: 'newname', teacher_id: 1 });
+        
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('A file with this name already exists for this teacher and subject.');
+        });
+        
+        
     });
 
     // Tests for renameSingleFile
     describe('renameSingleFile', () => {
+
         it('should rename a file successfully', async () => {
             jest.spyOn(File, 'findByPk').mockResolvedValue({
                 id: 1,
                 filename: 'testfile.txt',
+                filepath: 'uploads/testfile.txt',
                 teacher_id: 1,
+                subject_id: 1,
                 save: jest.fn().mockResolvedValue(),
             });
 
+            jest.spyOn(File, 'findOne').mockResolvedValue(null);
+
             const response = await request(app)
-                .put('/files/1/rename')
-                .send({ new_filename: 'newname', teacher_id: 1 });
+                .put('/file/update-single/1')
+                .send({ new_filename: 'newfilename', teacher_id: 1 });
 
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('File renamed successfully');
@@ -161,7 +276,7 @@ describe('File Controller', () => {
 
         it('should return 400 for invalid filename', async () => {
             const response = await request(app)
-                .put('/files/1/rename')
+                .put('/file/update-single/1')
                 .send({ new_filename: 'invalid name!', teacher_id: 1 });
 
             expect(response.status).toBe(400);
@@ -172,15 +287,70 @@ describe('File Controller', () => {
             jest.spyOn(File, 'findByPk').mockResolvedValue(null);
 
             const response = await request(app)
-                .put('/files/1/rename')
+                .put('/file/update-single/9999')
                 .send({ new_filename: 'newname', teacher_id: 1 });
 
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('File not found');
         });
+
+        it('should return 401 if teacher_id does not match during rename', async () => {
+            jest.spyOn(File, 'findByPk').mockResolvedValue({
+                id: 1,
+                filename: 'testfile.txt',
+                filepath: 'uploads/testfile.txt',
+                teacher_id: 2,
+                subject_id: 1,
+                save: jest.fn().mockResolvedValue(),
+            });
+        
+            const response = await request(app)
+                .put('/file/update-single/1')
+                .send({ new_filename: 'newname', teacher_id: 1 });
+        
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('Unauthorized file access');
+        });
+
+        it('should return 500 if file save fails during rename', async () => {
+            jest.spyOn(File, 'findByPk').mockResolvedValue({
+                id: 1,
+                filename: 'testfile.txt',
+                filepath: 'uploads/testfile.txt',
+                teacher_id: 1,
+                subject_id: 1,
+                save: jest.fn().mockRejectedValue(new Error('Save error')),
+            });
+        
+            const response = await request(app)
+                .put('/file/update-single/1')
+                .send({ new_filename: 'newname', teacher_id: 1 });
+        
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('Internal server error');
+        });
+
+        it('should return 400 if a file with the new name already exists during rename', async () => {
+            jest.spyOn(File, 'findByPk').mockResolvedValue({
+                id: 1,
+                filename: 'testfile.txt',
+                filepath: 'uploads/testfile.txt',
+                teacher_id: 1,
+                subject_id: 1,
+                save: jest.fn().mockRejectedValue(new UniqueConstraintError()),
+            });
+        
+            const response = await request(app)
+                .put('/file/update-single/1')
+                .send({ new_filename: 'newname', teacher_id: 1 });
+        
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('A file with this name already exists for this teacher and subject.');
+        });
+        
+
     });
 
-    // Tests for deleteSingleFile
     describe('deleteSingleFile', () => {
         it('should delete a file successfully', async () => {
             jest.spyOn(File, 'findByPk').mockResolvedValue({
@@ -190,10 +360,12 @@ describe('File Controller', () => {
                 destroy: jest.fn().mockResolvedValue(),
             });
 
-            fs.unlink.mockImplementation((path, cb) => cb(null));
+            jest.spyOn(fs, 'unlink').mockImplementation((path, callback) => {
+                callback(null);
+            });
 
             const response = await request(app)
-                .delete('/files/1')
+                .delete('/file/delete-single/1')
                 .send({ teacher_id: 1 });
 
             expect(response.status).toBe(200);
@@ -204,11 +376,102 @@ describe('File Controller', () => {
             jest.spyOn(File, 'findByPk').mockResolvedValue(null);
 
             const response = await request(app)
-                .delete('/files/9999')
+                .delete('/file/delete-single/9999')
                 .send({ teacher_id: 1 });
 
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('File not found');
+        });
+
+        it('should return 500 if file deletion fails in filesystem', async () => {
+            jest.spyOn(File, 'findByPk').mockResolvedValue({
+                id: 1,
+                teacher_id: 1,
+                filepath: 'uploads/testfile.txt',
+                destroy: jest.fn().mockResolvedValue(),
+            });
+        
+            jest.spyOn(fs, 'unlink').mockImplementation((path, callback) => {
+                callback(new Error('Unlink error'));
+            });
+        
+            const response = await request(app)
+                .delete('/file/delete-single/1')
+                .send({ teacher_id: 1 });
+        
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('Error deleting file from filesystem');
+        });
+
+        it('should return 500 if there is an error deleting the file from the filesystem', async () => {
+            jest.spyOn(File, 'findByPk').mockResolvedValue({
+                id: 1,
+                teacher_id: 1,
+                filepath: 'uploads/testfile.txt',
+                destroy: jest.fn().mockResolvedValue(),
+            });
+        
+            jest.spyOn(fs, 'unlink').mockImplementation((path, callback) => {
+                callback(new Error('Error deleting file from filesystem'));
+            });
+        
+            const response = await request(app)
+                .delete('/file/delete-single/1')
+                .send({ teacher_id: 1 });
+        
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('Error deleting file from filesystem');
+        });        
+
+        it('should return 500 if there is an error deleting the file from the filesystem', async () => {
+            jest.spyOn(File, 'findByPk').mockResolvedValue({
+                id: 1,
+                teacher_id: 1,
+                filename: 'testfile.txt',
+                subject_id: 1,
+                filepath: 'uploads/testfile.txt',
+                destroy: jest.fn().mockResolvedValue(),
+            });
+        
+            jest.spyOn(fs, 'unlink').mockImplementation((path, callback) => {
+                callback(new Error('Error deleting file from filesystem'));
+            });
+        
+            const response = await request(app)
+                .delete('/file/delete-single/1')
+                .send({ teacher_id: 1 });
+        
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('Error deleting file from filesystem');
+        });
+
+        it('should return 500 if there is an internal server error during file deletion', async () => {
+            jest.spyOn(File, 'findByPk').mockRejectedValue(new Error('Internal error'));
+        
+            const response = await request(app)
+                .delete('/file/delete-single/1')
+                .send({ teacher_id: 1 });
+        
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('Internal server error');
+        });
+
+        it('should return 401 if teacher_id does not match during rename', async () => {
+            jest.spyOn(File, 'findByPk').mockResolvedValue({
+                id: 1,
+                filename: 'testfile.txt',
+                filepath: 'uploads/testfile.txt',
+                teacher_id: 2,
+                subject_id: 1,
+                save: jest.fn().mockResolvedValue(),
+            });
+        
+            const response = await request(app)
+                .delete('/file/delete-single/1')
+                .send({ new_filename: 'newname', teacher_id: 1 });
+        
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('Unauthorized file access');
         });
     });
 });

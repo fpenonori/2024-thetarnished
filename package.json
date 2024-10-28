@@ -16,6 +16,7 @@
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.5",
@@ -36,8 +37,5 @@
     "mockdate": "^3.0.5",
     "nodemon": "^3.1.7",
     "supertest": "^7.0.0"
-  },
-  "jest": {
-    "setupFiles": ["dotenv/config"]
   }
 }
