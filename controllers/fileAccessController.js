@@ -8,15 +8,16 @@ const Teacher = require('../models/teacherModel');
 
 const grantAccess = async (req, res) => {
     try {
-        const { fileId } = req.params;
+        const { id } = req.params;
         const { student_ids, teacher_id } = req.body;
 
         if (!Array.isArray(student_ids) || student_ids.length === 0) {
             return res.status(400).json({ message: 'No students provided for file access' });
         }
 
-        const file = await File.findByPk(fileId);
+        const file = await File.findByPk(id);
 
+        console.log('File id:', id);
         if (!file) {
             return res.status(404).json({ message: 'File not found' });
         }
@@ -46,7 +47,7 @@ const grantAccess = async (req, res) => {
         }
 
         const accessGrants = eligibleStudentIds.map(student_id => ({
-            file_id: fileId,
+            file_id: id,
             student_id: student_id,
         }));
 
@@ -65,9 +66,9 @@ const grantAccess = async (req, res) => {
 const revokeAccess = async (req, res) => {
     try {
         const { fileId } = req.params;
-        const { studentIds, teacher_id } = req.body;
+        const { student_ids, teacher_id } = req.body;
 
-        if (!studentIds || studentIds.length === 0) {
+        if (!student_ids || student_ids.length === 0) {
             return res.status(400).json({ message: 'No student IDs provided to revoke access.' });
         }
 
@@ -84,12 +85,12 @@ const revokeAccess = async (req, res) => {
         const accessRecords = await FileAccess.findAll({
             where: {
                 file_id: fileId,
-                student_id: studentIds,
+                student_id: student_ids,
             },
         });
 
         const foundStudentIds = accessRecords.map(record => record.student_id);
-        const missingStudentIds = studentIds.filter(id => !foundStudentIds.includes(id));
+        const missingStudentIds = student_ids.filter(id => !foundStudentIds.includes(id));
 
         if (missingStudentIds.length > 0) {
             return res.status(404).json({
@@ -101,7 +102,7 @@ const revokeAccess = async (req, res) => {
         await FileAccess.destroy({
             where: {
                 file_id: fileId,
-                student_id: studentIds,
+                student_id: student_ids,
             },
         });
 
@@ -157,8 +158,8 @@ const getFilesForStudent = async (req, res) => {
                     as: 'files',
                     through: { attributes: [] },
                     include: [
-                        { model: Subject, as: 'subject', attributes: ['subject_id', 'subjectname'] },
-                        { model: Teacher, as: 'teacher', attributes: ['teacher_id', 'firstname', 'lastname'] }
+                        { model: Subject, as: 'subject', attributes: ['subjectid', 'subjectname'] },
+                        { model: Teacher, as: 'teacher', attributes: ['teacherid', 'firstname', 'lastname'] }
                     ]
                 }
             ]

@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const FileAccess = sequelize.define('FileAccess', {
-    id: {
+    accessid: {
         type: DataTypes.BIGINT,
         autoIncrement: true,
         primaryKey: true
@@ -23,7 +23,7 @@ const FileAccess = sequelize.define('FileAccess', {
         },
         onDelete: 'CASCADE'
     },
-    access_granted_at: {
+    granted_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
     }

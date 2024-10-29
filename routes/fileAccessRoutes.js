@@ -15,9 +15,9 @@ app.use(express.json());
 const router = express.Router();
 
 router.post('/grant/:id', grantAccess);
-router.delete('/revoke/:id', revokeAccess);
-router.get('/teacher/:id', getFilesForTeacher);
-router.get('/student/:id', getFilesForStudent);
-router.get('/all-students-granted/:id', getGrantedStudentsForFile);
+router.delete('/revoke/:fileId', revokeAccess);
+router.get('/teacher/:teacher_id', getFilesForTeacher);
+router.get('/student/:student_id', getFilesForStudent);
+router.get('/all-students-granted/:file_id', getGrantedStudentsForFile);
 
 module.exports = router;

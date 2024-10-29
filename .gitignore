@@ -12,3 +12,5 @@ package-lock.json
 
 # Jest coverage
 coverage/
+
+uploads/*
