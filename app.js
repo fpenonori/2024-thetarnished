@@ -11,6 +11,7 @@ const monthlyScheduleRoutes = require('./routes/monthlyScheduleRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const examRoutes = require('./routes/examRoutes');
 const fileRoutes = require('./routes/fileRoutes');
+const fileAccessRoutes = require('./routes/fileAccessRoutes');
 const defineAssociations = require('./models/associations');
 const cors = require('cors');
 const fs = require('node:fs');
@@ -41,6 +42,7 @@ app.use('/classes', monthlyScheduleRoutes);
 app.use('/admins', adminRoutes);
 app.use('/exam', examRoutes);
 app.use('/file', fileRoutes);
+app.use('/file-access', fileAccessRoutes);
 
 
 app.get('*', (req, res) => {
