@@ -226,10 +226,54 @@ const getGrantedStudentsForFile = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+const getEligibleStudents = async (req, res) => {
+    try {
+        const { fileId } = req.params;
+
+        const file = await File.findByPk(fileId);
+        
+        if (!file) {
+            return res.status(404).json({ message: 'File not found' });
+        }
+
+        const { teacher_id, subject_id } = file;
+
+        const eligibleStudents = await Reservation.findAll({
+            where: {
+                teacher_id,
+                subject_id,
+            },
+            include: [
+                {
+                    model: Student,
+                    attributes: ['studentid', 'firstname', 'lastname'],
+                },
+            ],
+            group: ['student.studentid'],
+        });
+
+        const students = eligibleStudents.map(reservation => ({
+            studentid: reservation.Student.studentid,
+            fullname: `${reservation.Student.firstname} ${reservation.Student.lastname}`,
+        }));
+
+        if (students.length === 0) {
+            return res.status(404).json({ message: 'No eligible students found' });
+        }
+
+        res.status(200).json({ students });
+    } catch (error) {
+        console.error('Error retrieving eligible students:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
 module.exports = {
     grantAccess,
     revokeAccess,
     getFilesForTeacher,
     getFilesForStudent,
-    getGrantedStudentsForFile
+    getGrantedStudentsForFile,
+    getEligibleStudents
 };

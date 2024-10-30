@@ -96,7 +96,7 @@ describe('File Access Controller', () => {
 
             const response = await request(app)
                 .delete('/file-access/revoke/1')
-                .send({ studentIds: [mockEligibleStudentId], teacher_id: 1 });
+                .send({ student_ids: [mockEligibleStudentId], teacher_id: 1 });
 
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Access successfully revoked for all specified students.');
@@ -107,7 +107,7 @@ describe('File Access Controller', () => {
 
             const response = await request(app)
                 .delete('/file-access/revoke/1')
-                .send({ studentIds: [mockEligibleStudentId], teacher_id: 1 });
+                .send({ student_ids: [mockEligibleStudentId], teacher_id: 1 });
 
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('File not found');
@@ -117,7 +117,7 @@ describe('File Access Controller', () => {
             jest.spyOn(File, 'findByPk').mockResolvedValue({ teacher_id: 99 });
             const response = await request(app)
                 .delete('/file-access/revoke/1')
-                .send({ studentIds: [mockEligibleStudentId], teacher_id: 1 });
+                .send({ student_ids: [mockEligibleStudentId], teacher_id: 1 });
 
             expect(response.status).toBe(403);
             expect(response.body.message).toBe('Unauthorized operation to the file');
@@ -129,7 +129,7 @@ describe('File Access Controller', () => {
 
             const response = await request(app)
                 .delete('/file-access/revoke/1')
-                .send({ studentIds: [mockEligibleStudentId], teacher_id: 1 });
+                .send({ student_ids: [mockEligibleStudentId], teacher_id: 1 });
 
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('Some specified students do not have access to this file.');
@@ -140,7 +140,7 @@ describe('File Access Controller', () => {
 
             const response = await request(app)
                 .delete('/file-access/revoke/1')
-                .send({ studentIds: [10], teacher_id: 1 });
+                .send({ student_ids: [10], teacher_id: 1 });
 
             expect(response.status).toBe(500);
             expect(response.body.message).toBe('Internal server error');
@@ -149,7 +149,7 @@ describe('File Access Controller', () => {
         it('should return 400 if no student IDs provided for revoking access', async () => {
             const response = await request(app)
                 .delete('/file-access/revoke/1')
-                .send({ studentIds: [], teacher_id: 1 });
+                .send({ student_ids: [], teacher_id: 1 });
     
             expect(response.status).toBe(400);
             expect(response.body.message).toBe('No student IDs provided to revoke access.');
@@ -229,7 +229,6 @@ describe('File Access Controller', () => {
         });
     });
 
-    // Tests for getGrantedStudentsForFile
     describe('getGrantedStudentsForFile', () => {
         it('should fetch students granted access to a file', async () => {
             jest.spyOn(File, 'findByPk').mockResolvedValue({
@@ -256,6 +255,67 @@ describe('File Access Controller', () => {
             jest.spyOn(File, 'findByPk').mockRejectedValue(new Error('Database error'));
             const response = await request(app).get('/file-access/all-students-granted/1');
 
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('Internal server error');
+        });
+    });
+
+    describe('File Access Controller - Get Eligible Students', () => {
+
+        it('should return eligible students for a valid fileId', async () => {
+            jest.spyOn(File, 'findByPk').mockResolvedValue({ 
+                fileid: 1, 
+                teacher_id: 1, 
+                subject_id: 2 
+            });
+    
+            jest.spyOn(Reservation, 'findAll').mockResolvedValue([
+                {
+                    Student: { studentid: 10, firstname: 'John', lastname: 'Doe' },
+                },
+                {
+                    Student: { studentid: 11, firstname: 'Jane', lastname: 'Smith' },
+                },
+            ]);
+    
+            const response = await request(app).get('/file-access/eligible-students/1');
+    
+            expect(response.status).toBe(200);
+            expect(response.body.students).toEqual([
+                { studentid: 10, fullname: 'John Doe' },
+                { studentid: 11, fullname: 'Jane Smith' },
+            ]);
+        });
+    
+        it('should return 404 if no eligible students are found', async () => {
+            jest.spyOn(File, 'findByPk').mockResolvedValue({ 
+                fileid: 1, 
+                teacher_id: 1, 
+                subject_id: 2 
+            });
+    
+            jest.spyOn(Reservation, 'findAll').mockResolvedValue([]);
+    
+            const response = await request(app).get('/file-access/eligible-students/1');
+    
+            expect(response.status).toBe(404);
+            expect(response.body.message).toBe('No eligible students found');
+        });
+    
+        it('should return 404 if file is not found', async () => {
+            jest.spyOn(File, 'findByPk').mockResolvedValue(null);
+    
+            const response = await request(app).get('/file-access/eligible-students/9999');
+    
+            expect(response.status).toBe(404);
+            expect(response.body.message).toBe('File not found');
+        });
+    
+        it('should handle internal server error (500)', async () => {
+            jest.spyOn(File, 'findByPk').mockRejectedValue(new Error('Database error'));
+    
+            const response = await request(app).get('/file-access/eligible-students/1');
+    
             expect(response.status).toBe(500);
             expect(response.body.message).toBe('Internal server error');
         });

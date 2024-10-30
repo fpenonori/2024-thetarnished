@@ -4,7 +4,8 @@ const {
     revokeAccess,
     getFilesForTeacher,
     getFilesForStudent,
-    getGrantedStudentsForFile
+    getGrantedStudentsForFile,
+    getEligibleStudents
 } = require('../controllers/fileAccessController');
 
 const app = express();
@@ -19,5 +20,7 @@ router.delete('/revoke/:fileId', revokeAccess);
 router.get('/teacher/:teacher_id', getFilesForTeacher);
 router.get('/student/:student_id', getFilesForStudent);
 router.get('/all-students-granted/:file_id', getGrantedStudentsForFile);
+router.get('/eligible-students/:fileId', getEligibleStudents);
+
 
 module.exports = router;
