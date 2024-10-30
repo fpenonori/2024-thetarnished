@@ -133,7 +133,14 @@ const getFilesForTeacher = async (req, res) => {
             fileid: file.fileid,
             filename: file.filename,
             filepath: file.filepath,
-            upload_date: file.upload_date,
+            upload_date: String(new Date(file.upload_date).toLocaleString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            })),
             subject: {
                 subject_id: file.subject.subjectid,
                 subjectname: file.subject.subjectname
@@ -173,7 +180,15 @@ const getFilesForStudent = async (req, res) => {
             fileid: file.fileid,
             filename: file.filename,
             filepath: file.filepath,
-            upload_date: file.upload_date,
+            //upload_date: file.upload_date,
+            upload_date: String(new Date(file.upload_date).toLocaleString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            })),
             subject: {
                 subject_id: file.subject.subject_id,
                 subjectname: file.subject.subjectname
