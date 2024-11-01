@@ -216,7 +216,7 @@ const getGrantedStudentsForFile = async (req, res) => {
                 {
                     model: Student,
                     as: 'students',
-                    attributes: ['studentid', 'firstname', 'lastname'],
+                    attributes: ['studentid', 'firstname', 'lastname', 'email'],
                     through: { attributes: [] }
                 }
             ]
@@ -231,8 +231,8 @@ const getGrantedStudentsForFile = async (req, res) => {
             filename: file.filename,
             students: file.students.map(student => ({
                 student_id: student.studentid,
-                firstname: student.firstname,
-                lastname: student.lastname
+                fullname: `${student.firstname} ${student.lastname}`,
+                email: student.email
             }))
         };
         res.status(200).json(response);
@@ -254,23 +254,20 @@ const getEligibleStudents = async (req, res) => {
 
         const { teacher_id, subject_id } = file;
 
-        const eligibleStudents = await Reservation.findAll({
-            where: {
-                teacher_id,
-                subject_id,
-            },
-            include: [
-                {
-                    model: Student,
-                    attributes: ['studentid', 'firstname', 'lastname'],
-                },
-            ],
-            group: ['student.studentid'],
+        const eligibleStudents = await Student.findAll({
+            attributes: ['studentid', 'firstname', 'lastname', 'email'],
+            include: [{
+                model: Reservation,
+                as: 'Reservations', // Especifica el alias correcto
+                where: { teacher_id, subject_id }, // Filtros aplicados en Reservation
+                attributes: [],  // No necesitamos atributos de Reservation
+            }],
         });
 
-        const students = eligibleStudents.map(reservation => ({
-            studentid: reservation.Student.studentid,
-            fullname: `${reservation.Student.firstname} ${reservation.Student.lastname}`,
+        const students = eligibleStudents.map(student => ({
+            student_id: student.studentid,
+            fullname: `${student.firstname} ${student.lastname}`,
+            email: student.email
         }));
 
         if (students.length === 0) {
@@ -283,6 +280,7 @@ const getEligibleStudents = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
 
 module.exports = {
     grantAccess,

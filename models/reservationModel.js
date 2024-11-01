@@ -67,8 +67,8 @@ const Reservation = sequelize.define('Reservation', {
   timestamps: false,
 });
 
-Reservation.belongsTo(Student, { foreignKey: 'student_id' });
-Reservation.belongsTo(Subject, { foreignKey: 'subject_id' });
-Reservation.belongsTo(Teacher, { foreignKey: 'teacher_id' });
+Reservation.belongsTo(Student, { foreignKey: 'student_id', as: 'Student'});
+Reservation.belongsTo(Subject, { foreignKey: 'subject_id', as: 'Subject' });
+Reservation.belongsTo(Teacher, { foreignKey: 'teacher_id', as: 'Teacher' });
 
 module.exports = Reservation;

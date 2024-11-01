@@ -18,7 +18,7 @@ const authorizeRoles = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-router.post('/create', authorizeRoles('STUDENT'), createReservation);
+router.post('/create', authorizeRoles('STUDENT', 'ADMIN'), createReservation);
 router.delete('/delete/:id', authorizeRoles('TEACHER'), deleteReservation);
 router.get('/student/:student_id', authorizeRoles('STUDENT'), getReservationsByStudentId);
 router.get('/teacher/:teacher_id', authorizeRoles('TEACHER') ,getReservationsByTeacher);

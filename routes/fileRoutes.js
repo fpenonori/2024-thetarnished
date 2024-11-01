@@ -14,7 +14,7 @@ app.use(express.json());
 const router = express.Router();
 
 router.post('/upload-single', upload.single('file'), uploadSingleFile);
-router.get('/:id', getSingleFile);
+router.post('/:id', getSingleFile);
 router.put('/update-single/:id', renameSingleFile);
 router.delete('/delete-single/:id', deleteSingleFile);
 
