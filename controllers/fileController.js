@@ -118,7 +118,9 @@ const deleteSingleFile = async (req, res) => {
             return res.status(401).json({ message: 'Unauthorized file access' });
         }
 
-        const filePath = path.resolve(file.filepath);
+        //const filePath = path.resolve(file.filepath);
+        const uploadsPath = process.env.UPLOADS_PATH || 'uploads';
+        const fullPath = path.resolve(path.join(uploadsPath, path.basename(file.filepath)));
 
         fs.unlink(filePath, async (err) => {
             if (err) {
