@@ -22,7 +22,7 @@ const getTeacherById = async (req, res) => {
   try {
     const { id } = req.params;
     const teacher = await Teacher.findByPk(id);
-    
+
     if (!teacher) {
       return res.status(404).json({ message: 'Teacher not found' });
     }
@@ -36,7 +36,7 @@ const getTeacherById = async (req, res) => {
 const updateTeacher = async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstname, lastname  } = req.body;
+    const { firstname, lastname } = req.body;
     const teacher = await Teacher.findByPk(id);
     if (!teacher) {
       return res.status(404).json({ message: 'Teacher not found' });
@@ -54,7 +54,7 @@ const updateTeacher = async (req, res) => {
 const deleteTeacher = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Find the teacher by ID
     const teacher = await Teacher.findByPk(id);
     if (!teacher) {
@@ -66,7 +66,7 @@ const deleteTeacher = async (req, res) => {
       where: {
         teacher_id: id,
         datetime: {
-          [Op.gt]: moment().toDate() 
+          [Op.gt]: moment().toDate()
         }
       }
     });
@@ -86,26 +86,26 @@ const deleteTeacher = async (req, res) => {
 
 const assignSubjectToTeacher = async (req, res) => {
   try {
-    const { teacherid } = req.params; 
-    const { subjectid } = req.body; 
+    const { teacherid } = req.params;
+    const { subjectid } = req.body;
 
     const bigIntSubjectId = BigInt(subjectid);
-    
+
     const teacher = await Teacher.findByPk(teacherid);
     if (!teacher) {
       return res.status(404).json({ message: 'Teacher not found' });
     }
-    
+
     const subject = await Subject.findByPk(bigIntSubjectId);
     if (!subject) {
       return res.status(404).json({ message: 'Subject not found' });
     }
-    
+
     await SubjectTeacher.create({ teacherid: teacherid, subjectid: bigIntSubjectId });
 
     return res.status(201).json({ message: 'Subject assigned to teacher successfully' });
   } catch (error) {
-   
+
     /* istanbul ignore next */
     return res.status(400).json({ message: `Error assigning subject to teacher: ${error.message}` });
   }
@@ -125,16 +125,16 @@ const removeSubjectFromTeacher = async (req, res) => {
     }
     await SubjectTeacher.destroy({ where: { teacherid, subjectid } });
     return res.status(200).json({ message: 'Subject removed from teacher successfully' });
-  } catch(error){
+  } catch (error) {
     /* istanbul ignore next */
-     return res.status(400).json({ message: `Error deleting subject from teacher: ${error.message}` });
+    return res.status(400).json({ message: `Error deleting subject from teacher: ${error.message}` });
   }
 };
 
-  const getAllTeachersDictatingASubjectById = async (req, res) => {
-    try {
-      const { subjectid } = req.params;
-      const [teachers] = await sequelize.query(`
+const getAllTeachersDictatingASubjectById = async (req, res) => {
+  try {
+    const { subjectid } = req.params;
+    const [teachers] = await sequelize.query(`
         SELECT DISTINCT teachers.teacherid, firstname, lastname, email, subjectid  
         FROM teachers 
         JOIN subjectteacher 
@@ -149,36 +149,58 @@ const removeSubjectFromTeacher = async (req, res) => {
         replacements: { subjectid: subjectid },
       });
 
-      return res.status(200).json(teachers);
-    
-    } catch (error) {
-      /* istanbul ignore next */
-      return res.status(500).json({ message: `Error getting teachers: ${error.message}` });
+    return res.status(200).json(teachers);
+
+  } catch (error) {
+    /* istanbul ignore next */
+    return res.status(500).json({ message: `Error getting teachers: ${error.message}` });
+  }
+};
+
+const updateTeacherSubjects = async (email, subjects) => {
+  try {
+    if (!subjects || !Array.isArray(subjects) || subjects.length === 0) {
+      throw new Error('Invalid subjects data');
     }
-  };
 
-  const updateTeacherSubjects = async (email, subjects) => {
-      try {
-          if (!subjects || !Array.isArray(subjects) || subjects.length === 0) {
-              throw new Error('Invalid subjects data');
-          }
+    const teacher = await Teacher.findOne({ where: { email: email } });
+    if (!teacher) {
+      throw new Error('Teacher not found');
+    }
 
-          const teacher = await Teacher.findOne({where: {email: email}});
-          if (!teacher) {
-              throw new Error('Teacher not found');
-          }
+    await SubjectTeacher.destroy({ where: { teacherid: teacher.teacherid } });
 
-          await SubjectTeacher.destroy({ where: { teacherid: teacher.teacherid } });
+    const newRelations = subjects.map(subjectId => ({
+      teacherid: teacher.teacherid,
+      subjectid: subjectId
+    }));
+    await SubjectTeacher.bulkCreate(newRelations);
+  } catch (error) {
+    throw error;
+  }
+};
 
-          const newRelations = subjects.map(subjectId => ({
-              teacherid: teacher.teacherid,
-              subjectid: subjectId
-          }));
-          await SubjectTeacher.bulkCreate(newRelations);
-      } catch (error) {
-          throw error;
-      }
-  };
+const getSubjectsByTeacherId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const teacher = await Teacher.findByPk(id, {
+      include: {
+        model: Subject,
+        attributes: ['subjectid', 'subjectname'],
+        through: { attributes: [] }, // Exclude the join table attributes
+      },
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ message: 'Teacher not found' });
+    }
+
+    const subjects = teacher.Subjects; // Sequelize should populate this based on the association
+    return res.status(200).json(subjects);
+  } catch (error) {
+    return res.status(500).json({ message: `Error getting subjects: ${error.message}` });
+  }
+};
 
 module.exports = {
   getTeacherById,
@@ -188,5 +210,6 @@ module.exports = {
   removeSubjectFromTeacher,
   getAllTeachers,
   getAllTeachersDictatingASubjectById,
-  updateTeacherSubjects
+  updateTeacherSubjects,
+  getSubjectsByTeacherId
 };

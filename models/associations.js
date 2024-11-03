@@ -4,6 +4,7 @@ const Student = require('./studentModel');
 const File = require('./fileModel');
 const FileAccess = require('./fileAccessModel'); 
 const Reservation = require('./reservationModel');
+const Subject = require('./subjectModel');
 
 const defineAssociations = () => {
 
@@ -12,6 +13,8 @@ const defineAssociations = () => {
   File.belongsToMany(Student, { through: FileAccess, foreignKey: 'file_id', as: 'students' });
   Student.belongsToMany(File, { through: FileAccess, foreignKey: 'student_id', as: 'files' });
   Student.hasMany(Reservation, { foreignKey: 'student_id', as: 'Reservations' });
+  Teacher.belongsToMany(Subject, { through: 'subjectteacher', foreignKey: 'teacherid' });
+  Subject.belongsToMany(Teacher, { through: 'subjectteacher', foreignKey: 'subjectid' });
 
 };
 
