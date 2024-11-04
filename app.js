@@ -15,6 +15,7 @@ const fileAccessRoutes = require('./routes/fileAccessRoutes');
 const defineAssociations = require('./models/associations');
 const cors = require('cors');
 const fs = require('node:fs');
+const multer = require('multer');
 
 const app = express();
 
@@ -47,6 +48,15 @@ app.use('/file-access', fileAccessRoutes);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
+app.use((err, req, res, next) => {
+  // Handle Multer file size limit errors
+  if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: 'File size exceeds the limit.' });
+  }
+  console.error(err);
+  res.status(500).json({ error: 'An unexpected error occurred.' });
 });
 
 module.exports = app;
