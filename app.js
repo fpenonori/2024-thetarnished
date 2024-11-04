@@ -51,9 +51,12 @@ app.get('*', (req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  // Handle Multer file size limit errors
-  if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(413).json({ error: 'File size exceeds the limit.' });
+  if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ error: 'File size exceeds the 10MB limit.' });
+      }
+  } else if (err.message === 'File type not allowed') {
+      return res.status(400).json({ error: 'File type not allowed. Please upload a valid file.' });
   }
   console.error(err);
   res.status(500).json({ error: 'An unexpected error occurred.' });

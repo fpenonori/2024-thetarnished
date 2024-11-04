@@ -1,9 +1,11 @@
 const multer = require('multer');
 const path = require('path');
 
+const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf', '.docx'];
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadsPath = process.env.UPLOADS_PATH || 'uploads'; // default to 'uploads' if UPLOADS_PATH is not set
+    const uploadsPath = process.env.UPLOADS_PATH || 'uploads';
     cb(null, uploadsPath);
   },
   filename: (req, file, cb) => {
@@ -13,9 +15,19 @@ const storage = multer.diskStorage({
   },
 });
 
+const fileFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowedExtensions.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('File type not allowed'), false);
+  }
+};
+
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10MB
+  fileFilter,
 });
 
 module.exports = upload;
