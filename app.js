@@ -50,7 +50,21 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
+const allowedOrigins = [
+  'https://linkandlearn.fpenonori.com',
+  'http://localhost:5173', // Add other allowed origins here
+];
+
 app.use((err, req, res, next) => {
+
+  const origin = req.headers.origin;
+  
+  if (allowedOrigins.includes(origin)) {
+      res.header("Access-Control-Allow-Origin", origin);
+  }
+    
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+
   if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
           return res.status(413).json({ error: 'File size exceeds the 10MB limit.' });
@@ -60,6 +74,7 @@ app.use((err, req, res, next) => {
   }
   console.error(err);
   res.status(500).json({ error: 'An unexpected error occurred.' });
+
 });
 
 module.exports = app;
