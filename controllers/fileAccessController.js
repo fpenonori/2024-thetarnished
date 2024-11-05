@@ -73,11 +73,11 @@ const revokeAccess = async (req, res) => {
         }
 
         const file = await File.findByPk(fileId);
-        
+
         if (!file) {
             return res.status(404).json({ message: 'File not found' });
         }
-        
+
         if (file.teacher_id !== teacher_id) {
             return res.status(403).json({ message: 'Unauthorized operation to the file' });
         }
@@ -180,7 +180,6 @@ const getFilesForStudent = async (req, res) => {
             fileid: file.fileid,
             filename: file.filename,
             filepath: file.filepath,
-            //upload_date: file.upload_date,
             upload_date: String(new Date(file.upload_date).toLocaleString('en-US', {
                 year: 'numeric',
                 month: '2-digit',
@@ -190,11 +189,11 @@ const getFilesForStudent = async (req, res) => {
                 hour12: false
             })),
             subject: {
-                subject_id: file.subject.subject_id,
+                subject_id: file.subject.subjectid, // Ensure consistency here
                 subjectname: file.subject.subjectname
             },
             teacher: {
-                teacher_id: file.teacher.teacher_id,
+                teacher_id: file.teacher.teacherid, // Change to match the frontend expectation
                 firstname: file.teacher.firstname,
                 lastname: file.teacher.lastname
             }
@@ -247,7 +246,7 @@ const getEligibleStudents = async (req, res) => {
         const { fileId } = req.params;
 
         const file = await File.findByPk(fileId);
-        
+
         if (!file) {
             return res.status(404).json({ message: 'File not found' });
         }
