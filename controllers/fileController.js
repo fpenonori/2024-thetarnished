@@ -16,7 +16,7 @@ const uploadSingleFile = async (req, res) => {
         const teacher = await Teacher.findByPk(teacher_id);
         const subject = await Subject.findByPk(subject_id);
 
-        const validFilenamePattern = /^[\w\-()]+(\.[\w]+)?$/;
+        const validFilenamePattern = /^[\w\s\-\(\)]+(\.[a-zA-Z0-9]+)$/;
         if (!validFilenamePattern.test(fileName)) {
             // Delete the file if it doesn't match the pattern
             fs.unlinkSync(filePath);
