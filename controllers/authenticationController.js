@@ -285,7 +285,9 @@ const deleteUserAccount = async (req, res) => {
         if (user instanceof Student) {
             await Student.destroy({ where: { email: email } });
         } else if (user instanceof Teacher) {
-            await Teacher.destroy({ where: { email: email } });
+            //Esto es para el MVP 4, tenemos que nada mas ponerlo en isavailable false
+            await Teacher.update({ is_active: false }, { where: { email: email } });
+            //await Teacher.destroy({ where: { email: email } });
         }
 
         // Send account deletion notification

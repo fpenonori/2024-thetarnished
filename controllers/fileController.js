@@ -15,6 +15,14 @@ const uploadSingleFile = async (req, res) => {
         const filePath = req.file.path;
         const teacher = await Teacher.findByPk(teacher_id);
         const subject = await Subject.findByPk(subject_id);
+
+        const validFilenamePattern = /^[\w\-()]+(\.[\w]+)?$/;
+        if (!validFilenamePattern.test(fileName)) {
+            // Delete the file if it doesn't match the pattern
+            fs.unlinkSync(filePath);
+            return res.status(409).json({ message: 'Invalid filename format' });
+        }
+
         if (!teacher || !subject) {
             return res.status(404).json({ message: 'Teacher or subject not found' });
         }
