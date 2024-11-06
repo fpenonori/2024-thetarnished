@@ -139,7 +139,8 @@ const getFilesForTeacher = async (req, res) => {
                 day: '2-digit',
                 hour: '2-digit',
                 minute: '2-digit',
-                hour12: false
+                hour12: false,
+                timeZone: 'America/Argentina/Buenos_Aires'
             })),
             subject: {
                 subject_id: file.subject.subjectid,
@@ -186,7 +187,8 @@ const getFilesForStudent = async (req, res) => {
                 day: '2-digit',
                 hour: '2-digit',
                 minute: '2-digit',
-                hour12: false
+                hour12: false,
+                timeZone: 'America/Argentina/Buenos_Aires'
             })),
             subject: {
                 subject_id: file.subject.subjectid, // Ensure consistency here
