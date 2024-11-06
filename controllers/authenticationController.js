@@ -271,8 +271,7 @@ const deleteUserAccount = async (req, res) => {
                 where: {
                     teacher_id: user.teacherid,
                     datetime: { [Op.gt]: new Date() }, 
-                    reservation_status: { [Op.not]: 'canceled' }
-                }
+                    reservation_status: { [Op.notIn]: ['canceled', 'terminated'] }                }
             });
         }
 
