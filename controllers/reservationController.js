@@ -137,10 +137,12 @@ const getReservationsByStudentId = async (req, res) => {
             include: [
                 {
                     model: Teacher,
+                    as: 'Teacher',
                     attributes: ['firstname', 'lastname', 'teacherid'],
                 },
                 {
                     model: Subject,
+                    as: 'Subject',
                     attributes: ['subjectname'],
                 },
             ],
@@ -202,10 +204,12 @@ const getReservationsByTeacher = async (req, res) => {
             include: [
               {
                 model: Student,
+                as: 'Student',
                 attributes: ['firstname', 'lastname', 'studentid'],
               },
               {
                 model: Subject,
+                as: 'Subject',
                 attributes: ['subjectname'],
               },
             ],
@@ -286,10 +290,12 @@ const getTerminatedReservationsByTeacherId = async (req, res) => {
             include: [
                 {
                     model: Student,
+                    as: 'Student',
                     attributes: ['firstname', 'lastname'],
                 },
                 {
                     model: Subject,
+                    as: 'Subject',
                     attributes: ['subjectname'],
                 },
             ],
@@ -345,10 +351,12 @@ const getPastReservationsByTeacherId = async (req, res) => {
             include: [
               {
                 model: Student,
+                as: 'Student',
                 attributes: ['firstname', 'lastname'],
               },
               {
                 model: Subject,
+                as: 'Subject',
                 attributes: ['subjectname'],
               },
             ],
@@ -565,10 +573,12 @@ const getInDebtClassesById = async (req, res) => {
             include: [
               {
                 model: Student,
+                as: 'Student',
                 attributes: ['firstname', 'lastname'],
               },
               {
                 model: Subject,
+                as: 'Subject',
                 attributes: ['subjectname'],
               },
             ],
