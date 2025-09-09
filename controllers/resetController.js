@@ -117,8 +117,8 @@ const sendEmailToUser = async (email, subject, html) => {
         const transport = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                type: 'Oauth2',
-                user: 'linkandlearnonline@gmail.com',
+                type: 'OAuth2',
+                user: 'linknlearnonline@gmail.com',
                 clientId: CLIENT_ID,
                 clientSecret: CLIENT_SECRET,
                 refreshToken: REFRESH_TOKEN,
@@ -127,7 +127,7 @@ const sendEmailToUser = async (email, subject, html) => {
         });
 
         const mailOptions = {
-            from: 'Link and Learn <linkandlearnonline@gmail.com>',
+            from: 'Link and Learn <linknlearnonline@gmail.com>',
             to: email,
             subject: subject,
             html: html
