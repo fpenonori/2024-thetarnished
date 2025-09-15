@@ -91,8 +91,8 @@ const createReservation = async (req, res) => {
         const student = await Student.findByPk(student_id);
         const studentName = `${student.firstname} ${student.lastname}`;
         const studentEmail = student.email;
-        //const link = `https://linkandlearn.fpenonori.com/confirm-class/${reservation.id}/${reservation.teacher_id}`;
-        const link = `http://localhost:5173/confirm-class/${reservation.id}/${reservation.teacher_id}`;
+        const link = `https://linkandlearn.fpenonori.com/confirm-class/${reservation.id}/${reservation.teacher_id}`;
+        // const link = `http://localhost:5173/confirm-class/${reservation.id}/${reservation.teacher_id}`;
         const filePathTeacher = path.join(__dirname, '../classConfirmationTemplate.html');
         let htmlContentTeacher = fs.readFileSync(filePathTeacher, 'utf-8');
         htmlContentTeacher = htmlContentTeacher
