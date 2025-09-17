@@ -25,7 +25,7 @@ const postForgotPassword = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
         const foundUser = student ? student : teacher;
-        const secret = process.env.JWT_SECRET + foundUser.password;
+        const secret = process.env.JWT_AUTH_SECRET + foundUser.password;
         const payload = {
             email: email,
             id: foundUser.studentid || foundUser.teacherid
@@ -59,7 +59,7 @@ const getResetPassword = async (req, res) => {
         }
         const foundUser = student || teacher;
 
-        const secret = process.env.JWT_SECRET + foundUser.password;
+        const secret = process.env.JWT_AUTH_SECRET + foundUser.password;
 
         jwt.verify(token, secret);
 
@@ -90,7 +90,7 @@ const postResetPassword = async (req, res) => {
         }
 
         const foundUser = student || teacher;
-        const secret = process.env.JWT_SECRET + foundUser.password;
+        const secret = process.env.JWT_AUTH_SECRET + foundUser.password;
 
         jwt.verify(token, secret);
 
