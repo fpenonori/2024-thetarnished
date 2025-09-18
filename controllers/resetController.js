@@ -13,6 +13,8 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET
 const REDIRECT_URI = process.env.REDIRECT_URI
 const REFRESH_TOKEN = process.env.REFRESH_TOKEN
 
+const { GOOGLE_APP_PASSWORD } = process.env;
+
 const oAuth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI)
 oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN})
 
@@ -36,10 +38,8 @@ const postForgotPassword = async (req, res) => {
         const filePath = path.join(__dirname, '../resetPasswordTemplate.html');
         let htmlContent = fs.readFileSync(filePath, 'utf-8');
         htmlContent = htmlContent.replace('${resetLink}', resetLink);
-        setImmediate(() => {
-            sendEmailToUser(email, 'Password reset link', htmlContent)
-       .catch(() => {});
-        });
+        sendEmailToUser(email, 'Password reset link', htmlContent)
+
         res.status(200).json({ message: 'Password reset link has been sent to your email' });
 
     }catch(error){
@@ -48,6 +48,7 @@ const postForgotPassword = async (req, res) => {
 };
 
 const getResetPassword = async (req, res) => {
+    console.log('getResetPass')
     const { id, token } = req.params;
     
     try {
@@ -71,13 +72,12 @@ const getResetPassword = async (req, res) => {
         });
 
     } catch (err) {
+        console.log('err', err)
         return res.status(400).json({ message: 'Invalid token' });
     }
 };
 
 const postResetPassword = async (req, res) => {
-
-
     const { id, token } = req.params;
     const { newPassword } = req.body;
 
@@ -91,6 +91,8 @@ const postResetPassword = async (req, res) => {
 
         const foundUser = student || teacher;
         const secret = process.env.JWT_AUTH_SECRET + foundUser.password;
+
+        console.log('secret', secret)
 
         jwt.verify(token, secret);
 
@@ -112,17 +114,11 @@ const postResetPassword = async (req, res) => {
 
 const sendEmailToUser = async (email, subject, html) => {
     try {
-        const accessToken = await oAuth2Client.getAccessToken();
-        
         const transport = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                type: 'OAuth2',
                 user: 'linknlearnonline@gmail.com',
-                clientId: CLIENT_ID,
-                clientSecret: CLIENT_SECRET,
-                refreshToken: REFRESH_TOKEN,
-                accessToken: accessToken,
+                pass: GOOGLE_APP_PASSWORD, // Use the App Password here
             },
         });
 
