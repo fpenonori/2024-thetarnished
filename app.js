@@ -32,6 +32,7 @@ if (!fs.existsSync(uploadDir)) {
 
 defineAssociations();
 app.use(express.json());
+app.use('/admins', /* aca iria el middleware de admin */ adminRoutes);
 app.use('/reset', resetRoutes);
 app.use('/students', studentRoutes);
 app.use('/teachers', teacherRoutes);
@@ -40,7 +41,6 @@ app.use('/subject', subjectRoutes);
 app.use('/schedule', scheduleRoutes);
 app.use('/reservation', reservationRoutes);
 app.use('/classes', monthlyScheduleRoutes);
-app.use('/admins', adminRoutes);
 app.use('/exam', examRoutes);
 app.use('/file', fileRoutes);
 app.use('/file-access', fileAccessRoutes);

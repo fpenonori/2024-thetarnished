@@ -1,4 +1,6 @@
 const Reservation = require('../models/reservationModel');
+const Meeting = require('../models/meetingModel');
+
 const moment = require('moment');
 const sequelize = require('../config/database');
 const { Op } = require('sequelize');
@@ -9,10 +11,12 @@ const MonthlySchedule = require('../models/monthlyScheduleModel');
 const { sendEmailToUser } = require('./resetController');
 const path = require('path');
 const fs = require('fs');
+const { createZoomMeeting } = require('../controllers/zoomController');
 
 
 const createReservation = async (req, res) => {
     try {
+        console.log('createReservation')
         const { student_id, subject_id, teacher_id, schedule_id, payment_method } = req. body;
         const schedule = await MonthlySchedule.findByPk(schedule_id);
         if(schedule.currentstudents >= schedule.maxstudents){
@@ -31,9 +35,12 @@ const createReservation = async (req, res) => {
                     ]
                 }
             });
+
+            console.log('esta pegando aca', schedule, reservations)
         
             if(reservations) {
                 return res.status(403).json({
+                    // you already booked this reservation
                     message: 'This schedule cannot be taken'
                 }); 
             }
@@ -101,15 +108,12 @@ const createReservation = async (req, res) => {
             .replace(/{{formattedDate}}/g, formattedDate)
             .replace(/{{teacherName}}/g, teacherName)
             .replace(/{{CONFIRMATION_LINK}}/g, link)
-        setImmediate(async () => {
-            try {
-                await sendEmailToUser(teacherEmail, "Reservation Notification", htmlContentTeacher);
-            } catch (error) {
-            }
-        });
+
+            await sendEmailToUser(teacherEmail, "Reservation Notification", htmlContentTeacher);
 
         return res.status(201).json(reservation);
     } catch (error) {
+        console.log('asdf error', error)
         return res.status(500).json({ message: 'Error creating reservation', error });
     }
 };
@@ -594,19 +598,28 @@ const getInDebtClassesById = async (req, res) => {
     } catch (error) {
         return res.status(500).json({ message: 'Error fetching terminated classes', error });
     }
-
-    
 };
 
 const confirmReservation = async (req, res) => {
     try {
+        console.log('confirmReservation');
         const { id } = req.params;
         const reservation = await Reservation.findByPk(id);
+
         if (!reservation) {
             return res.status(404).json({ message: 'Reservation not found' });
         }
+
+        const existingMeeting = await Meeting.findOne({
+            where: { reservation_id: id },
+        });
+
+        if (existingMeeting) {
+            return res.status(409).json({ message: 'Meeting already exists for this reservation' });
+        }
+
         const schedule = await MonthlySchedule.findByPk(reservation.schedule_id);
-	    const date = new Date(schedule.datetime);
+        const date = new Date(schedule.datetime);
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear();
@@ -625,7 +638,7 @@ const confirmReservation = async (req, res) => {
         const student = await Student.findByPk(reservation.student_id);
         const studentName = `${student.firstname} ${student.lastname}`;
         const studentEmail = student.email;
-        
+
         const filePathStudent = path.join(__dirname, '../reservationNotificationForStudentTemplate.html');
         let htmlContentStudent = fs.readFileSync(filePathStudent, 'utf-8');
         htmlContentStudent = htmlContentStudent
@@ -640,7 +653,6 @@ const confirmReservation = async (req, res) => {
             .replace(/{{subjectname}}/g, subjectname)
             .replace(/{{formattedDate}}/g, formattedDate);
 
-        
         reservation.reservation_status = 'booked';
         await reservation.save();
 
@@ -651,13 +663,38 @@ const confirmReservation = async (req, res) => {
             } catch (error) {
             }
         });
+
+        const meeting = await createZoomMeeting({ topic: subjectname, time: reservation.datetime });
+        console.log('meeting', meeting);
+        const meetingPayload = {};
+
+        if (meeting.join_url && Meeting) {
+            const meetingId = meeting.id ?? meetingPayload.meetingId ?? meetingPayload.id;
+            const zoomIdentifier = meeting.uuid ?? meeting.uuidv4 ?? meetingPayload.zoomId;
+            const recordPayload = {
+                meetingId: meetingId ? String(meetingId) : undefined,
+                topic: meeting.topic || meetingPayload.topic,
+                startTime:
+                    meeting.start_time || meetingPayload.start_time || meetingPayload.startTime,
+                joinUrl: meeting.join_url,
+                zoomId: zoomIdentifier ? String(zoomIdentifier) : undefined,
+                password:
+                    meeting.password || meeting.settings?.password || meetingPayload.password,
+                reservation_id: id
+            };
+
+            if (recordPayload.meetingId && recordPayload.zoomId && recordPayload.password) {
+                const meetingResponse = await Meeting.upsert(recordPayload);
+                console.log('meetingResponse', meetingResponse)
+            }
+        }
+
         return res.status(200).json({ message: 'Reservation confirmed successfully' });
     } catch (error) {
+        console.log('error', error)
         return res.status(500).json({ message: 'Error confirming reservation', error });
     }
 };
-
-       
 module.exports = {
     createReservation,
     getReservationsByTeacher,

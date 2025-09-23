@@ -1,6 +1,7 @@
 const Admin = require('../models/adminModel');
 const Teacher = require('../models/teacherModel');
 const dayjs = require('dayjs');
+const { checkUpcomingMeetings } = require('../jobs/meetingReminder');
 
 const activateTeacher = async (req, res) => {
     try {
@@ -62,8 +63,15 @@ const getInactiveTeachers = async (req, res) => {
     }
 };
 
+const testCron = async (req, res) => {
+    console.log('running test cron');
+    await checkUpcomingMeetings()
+    res.status(200).json({ message: 'OK'})
+}
+
 module.exports = {
     activateTeacher,
     disableTeacher,
-    getInactiveTeachers
+    getInactiveTeachers,
+    testCron
 }
