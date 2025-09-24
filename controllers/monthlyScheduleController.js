@@ -163,10 +163,14 @@ const getMonthlyScheduleByTeacherId = async (req, res) => {
       where: {
         teacherid: teacherid,
         istaken: false,
+        datetime: {
+          [Op.gte]: new Date() // >= current date/time
+        }
       },
       order: [['datetime', 'ASC']],
     });
 
+    console.log('monthlySchedule', monthlySchedule)
     if (monthlySchedule.length > 0) {
       const formattedSchedule = monthlySchedule.map((schedule) => {
         const startTime = new Date(schedule.datetime).toTimeString().split(' ')[0]; 
@@ -182,6 +186,7 @@ const getMonthlyScheduleByTeacherId = async (req, res) => {
           dayofmonth: dayOfMonth,
           dayofweek: dayOfWeek,
           maxstudents: schedule.maxstudents,
+          dateTime: schedule.datetime
         };
       });
 
