@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class Reminder</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      color: #333333;
+      margin: 0;
+      padding: 0;
+    }
+    .email-container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      background-color: #4CAF50;
+      padding: 10px;
+      border-radius: 8px 8px 0 0;
+      color: #ffffff;
+    }
+    .content {
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .content p {
+      margin: 0 0 15px;
+    }
+    .details-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0 0 15px;
+    }
+    .details-list li {
+      margin-bottom: 8px;
+    }
+    .footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #888888;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">
+      <h1>Class Reminder</h1>
+    </div>
+    <div class="content">
+      <p>Dear {{GREETING_NAME}},</p>
+      <p>Your class with <strong>{{TEACHER_LABEL}}</strong> is scheduled for <strong>{{FRIENDLY_START}}</strong>.</p>
+      <p><strong>Class Details:</strong></p>
+      <ul class="details-list">
+        <li><strong>Teacher:</strong> {{TEACHER_LABEL}}</li>
+        <li><strong>Subject:</strong> {{SUBJECT_LABEL}}</li>
+        <li><strong>Date &amp; Time:</strong> {{FRIENDLY_START}}</li>{{JOIN_LIST_ITEM}}{{FALLBACK_PASSWORD}}
+      </ul>
+      <p>Please be ready a few minutes before the start time to ensure everything works smoothly.</p>
+      <p>See you soon!</p>
+      <p>The Link &amp; Learn Team</p>
+    </div>
+    <div class="footer">
+      <p>This is an automated message, please do not reply to this email.</p>
+    </div>
+  </div>
+</body>
+</html>
