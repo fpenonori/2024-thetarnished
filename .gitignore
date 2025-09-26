@@ -1,0 +1,12 @@
+*.changes
+
+*.image
+
+.env
+
+node_modules/
+package-lock.json
+
+coverage/
+
+uploads/

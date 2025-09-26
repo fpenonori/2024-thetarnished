@@ -1,10 +1,13 @@
 require('dotenv').config();
 const cron = require('node-cron');
 const { checkUpcomingMeetings } = require('./jobs/meetingReminder');
+const { replenishMonthlySchedules } = require('./jobs/replenishMonthlySchedules');
 
-// arranca cron
 const MEETING_REMINDER_CRON = process.env.MEETING_REMINDER_CRON || '0 * * * *';
 const MEETING_REMINDER_TZ = process.env.MEETING_REMINDER_TZ || 'America/Argentina/Buenos_Aires';
+
+const MONTHLY_SCHEDULE_CRON = process.env.MONTHLY_SCHEDULE_CRON || '0 0 * * *';
+const MONTHLY_SCHEDULE_TZ = process.env.MONTHLY_SCHEDULE_TZ || MEETING_REMINDER_TZ;
 
 function scheduleMeetingReminder() {
     const run = async () => {
@@ -26,4 +29,27 @@ function scheduleMeetingReminder() {
     );
 }
 
-module.exports = scheduleMeetingReminder;
+function scheduleMonthlyScheduleReplenisher() {
+    const run = async () => {
+        try {
+            await replenishMonthlySchedules();
+        } catch (error) {
+            console.error('[Monthly Schedule Replenisher] Unexpected error while generating future schedules', error);
+        }
+    };
+
+    cron.schedule(
+        MONTHLY_SCHEDULE_CRON,
+        run,
+        {
+            timezone: MONTHLY_SCHEDULE_TZ,
+        },
+    );
+}
+
+function scheduleCronJobs() {
+    scheduleMeetingReminder();
+    scheduleMonthlyScheduleReplenisher();
+}
+
+module.exports = scheduleCronJobs;
