@@ -90,7 +90,7 @@ function buildTeacherReminderHtml({ teacherName, subjectName, friendlyStart, joi
 async function safeSendEmail(to, subject, html, logger, contextLabel) {
     try {
         await sendEmailToUser(to, subject, html);
-        logger.log(`[Meeting Reminder] Sent ${contextLabel} to ${to}`);
+        // logger.log(`[Meeting Reminder] Sent ${contextLabel} to ${to}`);
     } catch (error) {
         logger.error(`[Meeting Reminder] Failed to send ${contextLabel} to ${to}`, error);
     }
