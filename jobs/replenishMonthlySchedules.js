@@ -63,7 +63,7 @@ async function replenishMonthlySchedules(logger = console) {
         [Op.in]: teacherIds,
       },
     },
-    attributes: ['teacherid', 'is_active'],
+    attributes: ['teacherid', 'is_active', 'on_vacation'],
   });
   const teacherById = new Map(teachers.map((teacher) => [String(teacher.teacherid), teacher]));
 
@@ -84,7 +84,7 @@ async function replenishMonthlySchedules(logger = console) {
         continue;
       }
 
-      if (!teacherRecord.is_active) {
+      if (!teacherRecord.is_active || teacherRecord.on_vacation) {
         logger.log(`[#${teacherId}] Teacher inactive - skipping.`);
         continue;
       }

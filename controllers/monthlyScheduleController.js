@@ -81,10 +81,14 @@ const getGroupClasses = async (req, res) => {
 const assignVacation = async (req, res) => {
   try {
     const { teacherid, startdate, enddate } = req.body;
-    await Teacher.update({ on_vacation: true }, { where: { teacherid: teacherid } })
     const startDate = moment(startdate).startOf('day').toDate();
     const endDate = moment(enddate).endOf('day').toDate();
-
+    const today = moment().startOf('day');
+    if (moment(startdate).isBefore(today)) {
+      return res.status(403).json({
+        message: 'Cannot set vacations between selected dates before today',
+      });
+    }
     const takenschedules = await MonthlySchedule.findAll({
       where: {
         teacherid: teacherid, 
@@ -119,13 +123,12 @@ const assignVacation = async (req, res) => {
           }
         }
       );
+      await Teacher.update({ on_vacation: true }, { where: { teacherid: teacherid } })
       const updatedSchedules = schedules.map(schedule => ({
         ...schedule.toJSON(),
         istaken: true
       }));
       res.status(200).json(updatedSchedules);
-    } else {
-      res.status(404).send('Schedules not found');
     }
   } catch (error) {
     /*istanbul ignore next*/
