@@ -114,7 +114,6 @@ const postResetPassword = async (req, res) => {
 
 const sendEmailToUser = async (email, subject, html) => {
     try {
-        console.log('sendEmailToUser');
         const transport = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -131,7 +130,6 @@ const sendEmailToUser = async (email, subject, html) => {
         };
 
         const responseSendEmail = await transport.sendMail(mailOptions);
-        console.log('responseSendEmail', responseSendEmail)
 
     } catch (error) {
         console.log('sendEmailToUserError', error);

@@ -4,28 +4,35 @@ const sequelize = require('../config/database');
 const FileAccess = sequelize.define('FileAccess', {
     accessid: {
         type: DataTypes.BIGINT,
-        autoIncrement: true,
-        primaryKey: true
+        primaryKey: true,
+        allowNull: false,
+        defaultValue: sequelize.literal('unique_rowid()')
     },
     student_id: {
         type: DataTypes.BIGINT,
+        allowNull: false,
         references: {
-            model: 'Students',
+            model: 'students',
             key: 'studentid'
         },
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
+        field: 'student_id'
     },
     file_id: {
         type: DataTypes.BIGINT,
+        allowNull: false,
         references: {
-            model: 'Files',
-            key: 'fileid'
+            model: 'files',
+            key: 'id'
         },
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
+        field: 'file_id'
     },
     granted_at: {
         type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        field: 'granted_at'
     }
 }, {
     tableName: 'file_access',
