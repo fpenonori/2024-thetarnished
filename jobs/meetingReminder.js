@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+﻿const { Op } = require('sequelize');
 const Meeting = require('../models/meetingModel');
 const Reservation = require('../models/reservationModel');
 const MonthlySchedule = require('../models/monthlyScheduleModel')
@@ -11,6 +11,9 @@ const path = require('path');
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const TWENTY_FOUR_HOURS_MS = 24 * ONE_HOUR_MS;
+const REMINDER_WINDOW_MS = process.env.MEETING_REMINDER_WINDOW_MS
+    ? Number(process.env.MEETING_REMINDER_WINDOW_MS)
+    : 30 * 60 * 1000;
 const REMINDER_TIMEZONE = process.env.MEETING_REMINDER_TZ || 'America/Argentina/Buenos_Aires';
 
 const friendlyFormatter = new Intl.DateTimeFormat('en-US', {
@@ -99,21 +102,24 @@ async function safeSendEmail(to, subject, html, logger, contextLabel) {
 async function checkUpcomingMeetings(logger = console) {
     const now = new Date();
     console.log('checkUpcomingMeetings - now', now)
-    const cutoff = new Date(now.getTime() + TWENTY_FOUR_HOURS_MS);
-    console.log('checkUpcomingMeetings - cutoff', cutoff)
+    const reminderWindowStart = new Date(now.getTime() + TWENTY_FOUR_HOURS_MS);
+    const reminderWindowEnd = new Date(reminderWindowStart.getTime() + REMINDER_WINDOW_MS);
+    console.log('checkUpcomingMeetings - windowStart', reminderWindowStart);
+    console.log('checkUpcomingMeetings - windowEnd', reminderWindowEnd);
 
     try {
         const meetings = await Meeting.findAll({
             where: {
                 startTime: {
-                    [Op.between]: [now, cutoff],
+                    [Op.gte]: reminderWindowStart,
+                    [Op.lt]: reminderWindowEnd,
                 },
             },
             order: [['startTime', 'ASC']],
         });
 
         if (!meetings.length) {
-            logger.log('[Meeting Reminder] No meetings starting within the next 24 hours.');
+            logger.log('[Meeting Reminder] No meetings starting roughly 24 hours from now.');
             return;
         }
 
@@ -222,3 +228,4 @@ module.exports = {
     checkUpcomingMeetings,
     ONE_HOUR_MS,
 };
+
