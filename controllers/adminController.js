@@ -3,12 +3,31 @@ const Teacher = require("../models/teacherModel");
 const Subject = require("../models/subjectModel");
 const Student = require("../models/studentModel");
 const SubjectTeacher = require("../models/subjectTeacherModel");
+const Schedule = require("../models/weeklyScheduleModel");
 const dayjs = require("dayjs");
 const { checkUpcomingMeetings } = require("../jobs/meetingReminder");
 const { faker } = require("@faker-js/faker");
 const fs = require("fs");
 const bcrypt = require("bcrypt");
 const sequelize = require("../config/database");
+const { ensureTeacherSchedule } = require("../helpers/teacherScheduleHelper");
+
+const DEFAULT_SEED_SCHEDULE = [
+  { start_time: "14:00", end_time: "15:00", dayofweek: 1, maxstudents: 1 },
+  { start_time: "15:00", end_time: "16:00", dayofweek: 1, maxstudents: 3 },
+  { start_time: "14:00", end_time: "15:00", dayofweek: 2, maxstudents: 1 },
+  { start_time: "15:00", end_time: "16:00", dayofweek: 2, maxstudents: 3 },
+  { start_time: "14:00", end_time: "15:00", dayofweek: 3, maxstudents: 1 },
+  { start_time: "15:00", end_time: "16:00", dayofweek: 3, maxstudents: 3 },
+  { start_time: "14:00", end_time: "15:00", dayofweek: 4, maxstudents: 1 },
+  { start_time: "15:00", end_time: "16:00", dayofweek: 4, maxstudents: 3 },
+  { start_time: "14:00", end_time: "15:00", dayofweek: 5, maxstudents: 1 },
+  { start_time: "15:00", end_time: "16:00", dayofweek: 5, maxstudents: 3 },
+  { start_time: "14:00", end_time: "15:00", dayofweek: 6, maxstudents: 1 },
+  { start_time: "15:00", end_time: "16:00", dayofweek: 6, maxstudents: 3 },
+  { start_time: "14:00", end_time: "15:00", dayofweek: 7, maxstudents: 1 },
+  { start_time: "15:00", end_time: "16:00", dayofweek: 7, maxstudents: 3 },
+];
 
 const DEFAULT_PASSWORD = "qwer123$";
 
@@ -182,6 +201,50 @@ const populateDB = async (req, res) => {
   return res.status(200).json({ message: result });
 };
 
+const seedTeacherSchedule = async (_req, res) => {
+  try {
+    const teachers = await Teacher.findAll({
+      attributes: ["teacherid", "is_active"],
+    });
+
+    const seeded = [];
+
+    for (const teacher of teachers) {
+      if (!teacher.is_active) {
+        continue;
+      }
+
+      const teacherid = teacher.teacherid;
+      const existingCount = await Schedule.count({ where: { teacherid } });
+
+      if (existingCount > 0) {
+        continue;
+      }
+
+      const weeklySlots = await ensureTeacherSchedule({
+        teacherid,
+        schedule: DEFAULT_SEED_SCHEDULE,
+      });
+
+      seeded.push({
+        teacherid,
+        createdSlots: weeklySlots.length,
+      });
+    }
+
+    if (seeded.length === 0) {
+      return res
+        .status(200)
+        .json({ message: "No teachers required schedule seeding" });
+    }
+
+    return res.status(201).json({ seeded });
+  } catch (err) {
+    const status = err.status ?? 500;
+    return res.status(status).json({ message: err.message });
+  }
+};
+
 const activateTeacher = async (req, res) => {
   try {
     const { id } = req.params;
@@ -263,5 +326,6 @@ module.exports = {
   getInactiveTeachers,
   testCron,
   populateDB,
+  seedTeacherSchedule,
   wipeAllModeledTables,
 };

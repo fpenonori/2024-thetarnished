@@ -5,6 +5,7 @@ const {
     getInactiveTeachers,
     testCron,
     populateDB,
+    seedTeacherSchedule,
     wipeAllModeledTables
 } = require('../controllers/adminController');
 const authorizeRoles = require('../middleware/authMiddleware');
@@ -16,6 +17,7 @@ router.post('/disable-teacher/:id', authorizeRoles('ADMIN'), disableTeacher)
 router.get('/inactive-teachers', authorizeRoles('ADMIN'), getInactiveTeachers)
 router.get('/test-cron', authorizeRoles('ADMIN'), testCron)
 router.post('/populate-db', populateDB)
+router.post('/seed-schedule', seedTeacherSchedule)
 router.delete('/wipe-db', wipeAllModeledTables)
 
 
