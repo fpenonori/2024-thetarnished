@@ -5,8 +5,95 @@ const Reservation = require('../models/reservationModel');
 const sequelize = require('../config/database');
 const { Op } = require('sequelize');
 const moment = require('moment');
-const { Sequelize } = require('sequelize');
+const MonthlySchedule = require("../models/monthlyScheduleModel");
+const WeeklySchedule = require("../models/weeklyScheduleModel");
 
+const getTeachers = async (req, res) => {
+try {
+  const {
+    name,
+    weekday,
+    subjectid,
+    individual,
+    from,
+    to
+  } = req.query;
+
+  const where = {};
+
+  if (name) {
+    where[Op.or] = [
+      { firstname: { [Op.iLike]: `%${name}%` } },
+      { lastname: { [Op.iLike]: `%${name}%` } },
+    ];
+  }
+
+  const includeArray = [
+    {
+      model: MonthlySchedule,
+      as: "monthlySchedules",
+      where: {
+        istaken: false,
+        datetime: { [Op.gt]: new Date() },
+      },
+      // TODO: check this required: false
+      required: true,
+    }
+  ];
+
+  // Add Subject filter only if subjectid is provided
+  if (subjectid) {
+    includeArray.push({
+      model: Subject, // Just the model, no 'as'
+      through: {
+        attributes: []
+      },
+      where: {
+        subjectid: subjectid
+      },
+      required: true,
+      attributes: [] // Don't include subject data in response
+    });
+  }
+
+  if (weekday || (from && to) || individual) {
+    const weekdayWhere = {};
+
+    if(weekday) {
+        weekdayWhere.dayofweek = {
+        [Op.or]: weekday.split(',')
+        }
+    }
+
+    if(individual) {
+      weekdayWhere.maxstudents = individual === 'true' ? 1 : { [Op.gt]: 1 };
+    }
+
+    if(from && to) {
+      weekdayWhere.start_time = { [Op.gte]: from };
+      weekdayWhere.end_time = { [Op.lte]: to };
+    }
+
+    includeArray.push({
+      model: WeeklySchedule,
+      where: weekdayWhere,
+    })
+  }
+
+
+  const teachers = await Teacher.findAll({
+    where,
+    include: includeArray,
+  });
+
+  return res.status(200).json(teachers);
+} catch (error) {
+  console.log("error", error);
+  return res
+    .status(400)
+    .json({ message: `Error getting teachers: ${error.message}` });
+}
+};
 
 const getAllTeachers = async (req, res) => {
   try {
@@ -14,7 +101,9 @@ const getAllTeachers = async (req, res) => {
     return res.status(200).json(teachers);
   } catch (error) {
     /* istanbul ignore next */
-    return res.status(400).json({ message: `Error getting teachers: ${error.message}` });
+    return res
+      .status(400)
+      .json({ message: `Error getting teachers: ${error.message}` });
   }
 };
 
@@ -203,6 +292,7 @@ const getSubjectsByTeacherId = async (req, res) => {
 };
 
 module.exports = {
+  getTeachers,
   getTeacherById,
   updateTeacher,
   deleteTeacher,

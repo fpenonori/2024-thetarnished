@@ -37,7 +37,7 @@ const createReservation = async (req, res) => {
             });
 
             console.log('esta pegando aca', schedule, reservations)
-        
+
             if(reservations) {
                 return res.status(403).json({
                     // you already booked this reservation
@@ -150,7 +150,7 @@ const getReservationsByStudentId = async (req, res) => {
                     attributes: ['subjectname'],
                 },
             ],
-            attributes: ['id', 'datetime'],
+            attributes: ['id', 'datetime', 'schedule_id'],
             order: [['datetime', 'ASC']],
         });
           

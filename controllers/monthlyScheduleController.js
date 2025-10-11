@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, col, where, literal } = require('sequelize');
 const MonthlySchedule = require('../models/monthlyScheduleModel');
 const Teacher = require('../models/teacherModel');
 const moment = require('moment');
@@ -159,6 +159,88 @@ const stopVacation = async (req, res) => {
   }
 };
 
+const getMonthlySchedule = async (req, res) => {
+  try {
+
+    console.log('getMonthlySchedule called');
+
+    const { teacherid, from, to, available, name, page = 1, limit = 10, weekday  } = req.query;
+    const whereClause = {};
+
+    if (teacherid) {
+      whereClause.teacherid = teacherid;
+    }
+
+    if (from && to) {
+      whereClause.datetime = { [Op.between]: [new Date(from), new Date(to)] };
+    }
+
+    if (available === 'true') {
+      whereClause.currentstudents = { [Op.lt]: col('maxstudents') };
+    }
+
+    if (available === 'false') {
+      whereClause.currentstudents = { [Op.eq]: col('maxstudents') };
+    }
+
+    console.log('weekday', weekday);
+
+    if (weekday !== undefined) {
+      whereClause[Op.and] = [
+        where(
+          literal(`EXTRACT(DOW FROM "datetime")`),
+          weekday
+        )
+      ];
+    }
+
+
+    const offset = (page - 1) * limit;
+
+    console.log('where', whereClause);
+
+
+    // filtrar los que ya estan ocupados
+    const response = await MonthlySchedule.findAndCountAll({
+      where: whereClause,
+      include: [{
+        model: Teacher,
+        as: 'teacher',
+        attributes: ['teacherid', 'firstname', 'lastname'],
+        where: name ? {
+          [Op.or]: [
+            { firstname: { [Op.like]: `%${name}%` } },
+            { lastname: { [Op.like]: `%${name}%` } },
+          ]
+        } : undefined
+      }],
+      order: [['datetime', 'ASC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+    const { rows, count } = response
+
+    console.log('response', {
+      classes: rows,
+      total: count,
+      page: parseInt(page),
+      totalPages: Math.ceil(count / limit)
+    });
+
+    return res.status(200).json({
+      classes: rows,
+      total: count,
+      page: parseInt(page),
+      totalPages: Math.ceil(count / limit)
+    });
+  } catch (error) {
+        console.log('error:', error);
+
+    return res.status(500).send('Server error');
+  }
+} 
+
 const getMonthlyScheduleByTeacherId = async (req, res) => {
   try {
     const { teacherid } = req.params;
@@ -173,7 +255,6 @@ const getMonthlyScheduleByTeacherId = async (req, res) => {
       order: [['datetime', 'ASC']],
     });
 
-    console.log('monthlySchedule', monthlySchedule)
     if (monthlySchedule.length > 0) {
       const formattedSchedule = monthlySchedule.map((schedule) => {
         const startTime = new Date(schedule.datetime).toTimeString().split(' ')[0]; 
@@ -189,7 +270,7 @@ const getMonthlyScheduleByTeacherId = async (req, res) => {
           dayofmonth: dayOfMonth,
           dayofweek: dayOfWeek,
           maxstudents: schedule.maxstudents,
-          dateTime: schedule.datetime
+          datetime: schedule.datetime
         };
       });
 
@@ -277,6 +358,7 @@ module.exports = {
   getGroupClasses,
   createMonthlySchedule,
   assignVacation,
+  getMonthlySchedule,
   getMonthlyScheduleByTeacherId,
   stopVacation,
   getMonthlySubjectScheduleByTeacherId

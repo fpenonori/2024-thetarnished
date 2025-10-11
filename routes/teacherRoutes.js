@@ -1,5 +1,6 @@
 const express = require('express');
 const {
+    getTeachers,
     getTeacherById, 
     updateTeacher, 
     deleteTeacher, 
@@ -14,6 +15,7 @@ const router = express.Router();
 
 const authorizeRoles = require('../middleware/authMiddleware');
 
+router.get('/', authorizeRoles('STUDENT'), getTeachers);
 router.get('/all-dictating/:subjectid', authorizeRoles('STUDENT'), getAllTeachersDictatingASubjectById);
 router.get('/all-teachers', authorizeRoles('ADMIN'), getAllTeachers);
 router.get('/:id', authorizeRoles('ADMIN', 'STUDENT', 'TEACHER'), getTeacherById);

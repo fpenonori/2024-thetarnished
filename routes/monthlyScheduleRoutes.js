@@ -3,6 +3,7 @@ const {
     getIndividualClasses,
     getGroupClasses,
     assignVacation,
+    getMonthlySchedule,
     getMonthlyScheduleByTeacherId,
     stopVacation,
     getMonthlySubjectScheduleByTeacherId
@@ -14,6 +15,7 @@ app.use(express.json());
 
 const router = express.Router();
 
+router.get('/monthly-schedule', authorizeRoles('STUDENT', 'TEACHER'), getMonthlySchedule);
 router.get('/get-monthly-schedule-by/:teacherid', authorizeRoles('STUDENT', 'TEACHER'), getMonthlyScheduleByTeacherId);
 router.get('/group-classes', authorizeRoles('STUDENT'), getGroupClasses);
 router.get('/individual-classes', authorizeRoles('STUDENT'), getIndividualClasses);

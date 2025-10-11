@@ -75,28 +75,45 @@ const updateStudent = async (req, res) => {
     }
   };
 
+  // I needed to get previous teachers without subject id
   const getPreviousTeachers = async (req, res) => {
     try {
-      const { id, subjectid } = req.params;
-  
-      const [teachers] = await sequelize.query(`
-        SELECT DISTINCT ON (teachers.teacherid) teachers.teacherid, teachers.firstname, teachers.lastname, teachers.email, reservations.id
-        FROM teachers
-        JOIN reservations
-        ON teachers.teacherid = reservations.teacher_id
-        JOIN subjectteacher 
-        ON teachers.teacherid = subjectteacher.teacherid
-        WHERE reservations.student_id = :studentid AND subjectteacher.subjectid = :subjectid
-        ORDER BY teachers.teacherid, reservations.id DESC
-        LIMIT 3;
-      `, {
-        replacements: { studentid: id, subjectid: subjectid }, 
-      });
-  
-      return res.status(200).json(teachers);
-  
+      // last 3 distinct teachers who had reservations with the student
+      const { id } = req.params;
+      const { subjectid } = req.query;
+
+      console.log('req.query', req.query)
+
+      console.log('id', id)
+      console.log('subjedtid', subjectid)
+
+      const replacements = { studentid: id };
+
+      // optional: passing subject id
+      let subjectCondition = '';
+      if (subjectid) {
+        replacements.subjectid = subjectid;
+        subjectCondition = 'AND subjectteacher.subjectid = :subjectid';
+      }
+
+
+  const [results] = await sequelize.query(`
+    SELECT DISTINCT ON (teachers.teacherid) teachers.teacherid, teachers.firstname, teachers.lastname
+    FROM teachers
+    JOIN reservations
+      ON teachers.teacherid = reservations.teacher_id
+    JOIN subjectteacher
+      ON teachers.teacherid = subjectteacher.teacherid
+    WHERE reservations.student_id = :studentid
+      ${subjectCondition}
+    ORDER BY teachers.teacherid, reservations.id DESC
+    LIMIT 3;
+  `, { replacements });
+
+      return res.status(200).json(results);
     } catch (error) {
       /* istanbul ignore next */
+      console.log('teachers error', error)
       return res.status(500).json({ message: `Error getting previous teachers: ${error.message}` });
     }
   };
