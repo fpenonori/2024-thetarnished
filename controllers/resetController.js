@@ -48,7 +48,6 @@ const postForgotPassword = async (req, res) => {
 };
 
 const getResetPassword = async (req, res) => {
-    console.log('getResetPass')
     const { id, token } = req.params;
     
     try {
@@ -72,7 +71,7 @@ const getResetPassword = async (req, res) => {
         });
 
     } catch (err) {
-        console.log('err', err)
+        console.error('Error', err)
         return res.status(400).json({ message: 'Invalid token' });
     }
 };
@@ -91,8 +90,6 @@ const postResetPassword = async (req, res) => {
 
         const foundUser = student || teacher;
         const secret = process.env.JWT_AUTH_SECRET + foundUser.password;
-
-        console.log('secret', secret)
 
         jwt.verify(token, secret);
 
@@ -118,7 +115,7 @@ const sendEmailToUser = async (email, subject, html) => {
             service: 'gmail',
             auth: {
                 user: 'linknlearnonline@gmail.com',
-                pass: GOOGLE_APP_PASSWORD, // Use the App Password here
+                pass: GOOGLE_APP_PASSWORD,
             },
         });
 
@@ -132,7 +129,7 @@ const sendEmailToUser = async (email, subject, html) => {
         const responseSendEmail = await transport.sendMail(mailOptions);
 
     } catch (error) {
-        console.log('sendEmailToUserError', error);
+        console.error('sendEmailToUser Error', error);
         throw error;
     }
 };

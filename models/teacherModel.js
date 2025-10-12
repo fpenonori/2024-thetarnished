@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-//const Exam = require('./examModel');
+
 
 
 const Teacher = sequelize.define('Teacher', {
@@ -43,6 +43,4 @@ const Teacher = sequelize.define('Teacher', {
   tableName: 'teachers',
   timestamps: false
 });
-//Teacher.hasMany(Exam, { foreignKey: 'teacher_id' });
-//Exam.belongsTo(Teacher, { foreignKey: 'teacher_id' });
 module.exports = Teacher;

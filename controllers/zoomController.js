@@ -7,7 +7,6 @@ const ZOOM_API_BASE_URL = 'https://api.zoom.us/v2';
 const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
 const DEFAULT_LEAD_TIME_MS = 2 * 60 * 60 * 1000;
 
-// auth
 function getZoomCredentials() {
     const required = ['ZOOM_ACCOUNT_ID', 'ZOOM_CLIENT_ID', 'ZOOM_CLIENT_SECRET'];
     const missing = required.filter((key) => !process.env[key]);
@@ -56,7 +55,6 @@ async function getAccessToken() {
     }
 }
 
-// create meeting
 function formatDateTimeInTimeZone(date, timeZone = DEFAULT_TIMEZONE) {
     const parts = new Intl.DateTimeFormat('en-CA', {
         timeZone,
@@ -112,7 +110,6 @@ function getDefaultMeetingPayload() {
 async function createMeeting(userId = 'me', meetingOptions = {}) {
     const { token } = await getAccessToken();
     const payload = Object.keys(meetingOptions).length
-        // ? normalizePayloadWithTimezone(meetingOptions)
         ? meetingOptions
         : getDefaultMeetingPayload();
 

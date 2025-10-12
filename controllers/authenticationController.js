@@ -275,21 +275,16 @@ const deleteUserAccount = async (req, res) => {
             });
         }
 
-        // If a blocking reservation exists (future reservation not canceled or in debt), prevent deletion
         if (reservationBlockExists) {
             return res.status(400).json({ message: 'Cannot delete user with active or in debt reservations' });
         }
 
-        // Delete the user if no blocking reservations exist
         if (user instanceof Student) {
             await Student.destroy({ where: { email: email } });
         } else if (user instanceof Teacher) {
-            //Esto es para el MVP 4, tenemos que nada mas ponerlo en isavailable false
             await Teacher.update({ is_active: false }, { where: { email: email } });
-            //await Teacher.destroy({ where: { email: email } });
         }
 
-        // Send account deletion notification
         const filePath = path.join(__dirname, '../deleteNotificationTemplate.html');
         let htmlContent = fs.readFileSync(filePath, 'utf-8');
 

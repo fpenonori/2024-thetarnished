@@ -34,7 +34,6 @@ const defineAssociations = () => {
     foreignKey: "subjectid",
   });
 
-  // new association
   Teacher.hasMany(MonthlySchedule, {
     foreignKey: "teacherid",
     as: "monthlySchedules",
@@ -44,7 +43,6 @@ const defineAssociations = () => {
     as: "teacher",
   });
 
-  // Reservation.belongsTo(Teacher, { foreignKey: 'teacher_id', as: 'teacher' });
   Teacher.hasMany(Reservation, {
     foreignKey: "teacher_id",
     as: "Reservations",

@@ -17,7 +17,6 @@ const grantAccess = async (req, res) => {
 
         const file = await File.findByPk(id);
 
-        console.log('File id:', id);
         if (!file) {
             return res.status(404).json({ message: 'File not found' });
         }
@@ -39,8 +38,6 @@ const grantAccess = async (req, res) => {
         });
 
         const eligibleStudentIds = eligibleStudents.map(reservation => reservation.student_id);
-
-        console.log('Eligible Student IDs:', eligibleStudentIds);
 
         if (eligibleStudentIds.length === 0) {
             return res.status(400).json({ message: 'No eligible students with past or active reservations' });
@@ -191,11 +188,11 @@ const getFilesForStudent = async (req, res) => {
                 timeZone: 'America/Argentina/Buenos_Aires'
             })),
             subject: {
-                subject_id: file.subject.subjectid, // Ensure consistency here
+                subject_id: file.subject.subjectid, 
                 subjectname: file.subject.subjectname
             },
             teacher: {
-                teacher_id: file.teacher.teacherid, // Change to match the frontend expectation
+                teacher_id: file.teacher.teacherid,
                 firstname: file.teacher.firstname,
                 lastname: file.teacher.lastname
             }
@@ -259,9 +256,9 @@ const getEligibleStudents = async (req, res) => {
             attributes: ['studentid', 'firstname', 'lastname', 'email'],
             include: [{
                 model: Reservation,
-                as: 'Reservations', // Especifica el alias correcto
-                where: { teacher_id, subject_id }, // Filtros aplicados en Reservation
-                attributes: [],  // No necesitamos atributos de Reservation
+                as: 'Reservations',
+                where: { teacher_id, subject_id },
+                attributes: [],
             }],
         });
 

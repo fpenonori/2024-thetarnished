@@ -18,7 +18,6 @@ const uploadSingleFile = async (req, res) => {
 
         const validFilenamePattern = /^[\w\s\-\(\)]+(\.[a-zA-Z0-9]+)$/;
         if (!validFilenamePattern.test(fileName)) {
-            // Delete the file if it doesn't match the pattern
             fs.unlinkSync(filePath);
             return res.status(409).json({ message: 'Invalid filename format' });
         }

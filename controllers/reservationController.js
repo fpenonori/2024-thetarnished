@@ -16,7 +16,6 @@ const { createZoomMeeting } = require('../controllers/zoomController');
 
 const createReservation = async (req, res) => {
     try {
-        console.log('createReservation')
         const { student_id, subject_id, teacher_id, schedule_id, payment_method } = req. body;
         const schedule = await MonthlySchedule.findByPk(schedule_id);
         if(schedule.currentstudents >= schedule.maxstudents){
@@ -36,11 +35,8 @@ const createReservation = async (req, res) => {
                 }
             });
 
-            console.log('esta pegando aca', schedule, reservations)
-
             if(reservations) {
                 return res.status(403).json({
-                    // you already booked this reservation
                     message: 'This schedule cannot be taken'
                 }); 
             }
@@ -113,12 +109,10 @@ const createReservation = async (req, res) => {
 
         return res.status(201).json(reservation);
     } catch (error) {
-        console.log('asdf error', error)
+        console.error('Error', error)
         return res.status(500).json({ message: 'Error creating reservation', error });
     }
 };
-
-
 
 const getReservationsByStudentId = async (req, res) => {
     try {
@@ -178,7 +172,7 @@ const deleteReservation = async (req, res) => {
         const schedule = await MonthlySchedule.findByPk(scheduleid);
         const newcurrentstudents = parseInt(schedule.currentstudents) - 1;
         await MonthlySchedule.update({
-            istaken: false, //siempre va false porque va a quedar siempre un lugar (ya sea grupal o individual)
+            istaken: false, 
             currentstudents: newcurrentstudents
         }, {
             where: {monthlyscheduleid: scheduleid}
@@ -549,7 +543,7 @@ const confirmPayment = async (req, res) => {
         if(reservationStatus === 'paid' || reservationStatus === 'in debt' ){
             return res.status(400).json({ message: 'reservation already processed' });
         }
-        if (reservationStatus === 'aceptada' ) { //&& reservationStatus !== 'paid'
+        if (reservationStatus === 'aceptada' ) {
             reservation.reservation_status = 'paid';
         } else {
             reservation.reservation_status = 'in debt';
@@ -602,7 +596,6 @@ const getInDebtClassesById = async (req, res) => {
 
 const confirmReservation = async (req, res) => {
     try {
-        console.log('confirmReservation');
         const { id } = req.params;
         const reservation = await Reservation.findByPk(id);
 
@@ -665,7 +658,6 @@ const confirmReservation = async (req, res) => {
         });
 
         const meeting = await createZoomMeeting({ topic: subjectname, time: reservation.datetime });
-        console.log('meeting', meeting);
         const meetingPayload = {};
 
         if (meeting.join_url && Meeting) {

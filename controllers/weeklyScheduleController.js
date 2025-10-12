@@ -85,7 +85,6 @@ const getScheduleByTeacher = async (req, res) => {
 
   try {
     const schedules = await Schedule.findAll({
-      // where: { teacherid: teacherid, istaken: false }, istaken no esta mas en en el modelo de Weekly Schedule
       where: { teacherid: teacherid },
       include: {
         model: Teacher,

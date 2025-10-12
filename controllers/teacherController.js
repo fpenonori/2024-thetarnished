@@ -88,7 +88,7 @@ try {
 
   return res.status(200).json(teachers);
 } catch (error) {
-  console.log("error", error);
+  console.error("Error", error);
   return res
     .status(400)
     .json({ message: `Error getting teachers: ${error.message}` });

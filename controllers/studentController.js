@@ -75,17 +75,10 @@ const updateStudent = async (req, res) => {
     }
   };
 
-  // I needed to get previous teachers without subject id
   const getPreviousTeachers = async (req, res) => {
     try {
-      // last 3 distinct teachers who had reservations with the student
       const { id } = req.params;
       const { subjectid } = req.query;
-
-      console.log('req.query', req.query)
-
-      console.log('id', id)
-      console.log('subjedtid', subjectid)
 
       const replacements = { studentid: id };
 
@@ -113,7 +106,7 @@ const updateStudent = async (req, res) => {
       return res.status(200).json(results);
     } catch (error) {
       /* istanbul ignore next */
-      console.log('teachers error', error)
+      console.error('Teachers error', error)
       return res.status(500).json({ message: `Error getting previous teachers: ${error.message}` });
     }
   };

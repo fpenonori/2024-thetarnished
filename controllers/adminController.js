@@ -6,6 +6,7 @@ const SubjectTeacher = require("../models/subjectTeacherModel");
 const Schedule = require("../models/weeklyScheduleModel");
 const dayjs = require("dayjs");
 const { checkUpcomingMeetings } = require("../jobs/meetingReminder");
+const { replenishMonthlySchedules } = require("../jobs/replenishMonthlySchedules");
 const { faker } = require("@faker-js/faker");
 const fs = require("fs");
 const bcrypt = require("bcrypt");
@@ -64,7 +65,6 @@ const wipeAllModeledTables = async (req, res) => {
     return res.status(200).json({ ok: true, truncatedTables: tables });
   } catch (err) {
     await t.rollback();
-    console.error("wipeDb failed:", err);
     return res.status(500).json({ ok: false, error: err.message });
   }
 };
@@ -315,9 +315,16 @@ const getInactiveTeachers = async (req, res) => {
 };
 
 const testCron = async (req, res) => {
-  console.log("running test cron");
-  await checkUpcomingMeetings();
-  res.status(200).json({ message: "OK" });
+  try {
+    await checkUpcomingMeetings();
+    await replenishMonthlySchedules();
+    res.status(200).json({ message: "OK" });
+  } catch (error) {
+    res.status(500).json({
+      message: "Cron job execution failed",
+      error: error.message,
+    });
+  }
 };
 
 module.exports = {

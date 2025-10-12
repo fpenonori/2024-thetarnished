@@ -162,8 +162,6 @@ const stopVacation = async (req, res) => {
 const getMonthlySchedule = async (req, res) => {
   try {
 
-    console.log('getMonthlySchedule called');
-
     const { teacherid, from, to, available, name, page = 1, limit = 10, weekday  } = req.query;
     const whereClause = {};
 
@@ -183,8 +181,6 @@ const getMonthlySchedule = async (req, res) => {
       whereClause.currentstudents = { [Op.eq]: col('maxstudents') };
     }
 
-    console.log('weekday', weekday);
-
     if (weekday !== undefined) {
       whereClause[Op.and] = [
         where(
@@ -194,11 +190,7 @@ const getMonthlySchedule = async (req, res) => {
       ];
     }
 
-
     const offset = (page - 1) * limit;
-
-    console.log('where', whereClause);
-
 
     // filtrar los que ya estan ocupados
     const response = await MonthlySchedule.findAndCountAll({
@@ -221,13 +213,6 @@ const getMonthlySchedule = async (req, res) => {
 
     const { rows, count } = response
 
-    console.log('response', {
-      classes: rows,
-      total: count,
-      page: parseInt(page),
-      totalPages: Math.ceil(count / limit)
-    });
-
     return res.status(200).json({
       classes: rows,
       total: count,
@@ -235,8 +220,7 @@ const getMonthlySchedule = async (req, res) => {
       totalPages: Math.ceil(count / limit)
     });
   } catch (error) {
-        console.log('error:', error);
-
+    console.error('error:', error);
     return res.status(500).send('Server error');
   }
 } 
@@ -249,7 +233,7 @@ const getMonthlyScheduleByTeacherId = async (req, res) => {
         teacherid: teacherid,
         istaken: false,
         datetime: {
-          [Op.gte]: new Date() // >= current date/time
+          [Op.gte]: new Date()
         }
       },
       order: [['datetime', 'ASC']],

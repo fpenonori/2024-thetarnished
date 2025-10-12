@@ -8,6 +8,7 @@ const WeeklySchedule = require('../models/weeklyScheduleModel');
 const MonthlySchedule = require('../models/monthlyScheduleModel');
 const Teacher = require('../models/teacherModel');
 
+
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
@@ -17,6 +18,12 @@ const DEFAULT_TZ = process.env.MONTHLY_SCHEDULE_TZ
 const DAYS_AHEAD = Number(28);
 const OFFSET_HOURS = Number(3);
 const EXISTING_WINDOW_SECONDS = Number(1);
+const RETRY_ATTEMPTS = Number(process.env.MONTHLY_SCHEDULE_RETRY_ATTEMPTS || 5);
+const RETRY_DELAY_MS = Number(process.env.MONTHLY_SCHEDULE_RETRY_DELAY_MS || 250);
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function parseTimeParts(rawValue) {
   if (!rawValue) {
@@ -38,10 +45,31 @@ function createWindowAround(date) {
   };
 }
 
+async function runWithTransactionRetries(operation, logger) {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await operation();
+    } catch (error) {
+      const errorCode = error?.parent?.code || error?.original?.code || error?.code;
+      const shouldRetry = errorCode === '40001' && attempt < RETRY_ATTEMPTS;
+      if (!shouldRetry) {
+        throw error;
+      }
+
+      attempt += 1;
+      const backoff = RETRY_DELAY_MS * 2 ** (attempt - 1);
+      const jitter = Math.floor(Math.random() * RETRY_DELAY_MS);
+      logger.warn(`[Monthly Schedule Replenisher] Serialization failure (attempt ${attempt} of ${RETRY_ATTEMPTS}). Retrying after ${backoff + jitter}ms.`);
+      await wait(backoff + jitter);
+    }
+  }
+}
+
 async function replenishMonthlySchedules(logger = console) {
   const currentTimeZoned = dayjs().tz(DEFAULT_TZ);
   const yesterdayStart = currentTimeZoned.subtract(1, 'day').startOf('day');
-  const yesterdayJsDay = yesterdayStart.day(); // 0 (Sun) -> 6 (Sat)
+  const yesterdayJsDay = yesterdayStart.day();
   const weeklyScheduleDay = yesterdayJsDay === 0 ? 7 : yesterdayJsDay;
   const runDateLabel = yesterdayStart.format('YYYY-MM-DD');
 
@@ -67,12 +95,10 @@ async function replenishMonthlySchedules(logger = console) {
   });
   const teacherById = new Map(teachers.map((teacher) => [String(teacher.teacherid), teacher]));
 
-  logger.log('[Monthly Schedule Replenisher] Teacher map snapshot:', Object.fromEntries(teacherById));
-
   let createdCount = 0;
   let examinedCount = 0;
 
-  await sequelize.transaction(async (transaction) => {
+  await runWithTransactionRetries(() => sequelize.transaction(async (transaction) => {
     for (const weeklySchedule of weeklySchedules) {
       examinedCount += 1;
 
@@ -80,12 +106,12 @@ async function replenishMonthlySchedules(logger = console) {
       const teacherRecord = teacherById.get(teacherId);
 
       if (!teacherRecord) {
-        logger.log(`[#${teacherId}] Teacher record not found - skipping.`);
+        logger.warn(`[#${teacherId}] Teacher record not found - skipping.`);
         continue;
       }
 
       if (!teacherRecord.is_active || teacherRecord.on_vacation) {
-        logger.log(`[#${teacherId}] Teacher inactive - skipping.`);
+        logger.warn(`[#${teacherId}] Teacher inactive - skipping.`);
         continue;
       }
 
@@ -113,7 +139,7 @@ async function replenishMonthlySchedules(logger = console) {
       });
 
       if (!existingMonthlySlot) {
-        logger.log(`[#${teacherId}] No monthly schedule found for ${slotStartYesterday.format('YYYY-MM-DD HH:mm:ss')} - skipping.`);
+        logger.warn(`[#${teacherId}] No monthly schedule found for ${slotStartYesterday.format('YYYY-MM-DD HH:mm:ss')} - skipping.`);
         continue;
       }
 
@@ -134,7 +160,7 @@ async function replenishMonthlySchedules(logger = console) {
 
       if (futureSlotExists) {
         const futureSlotDisplay = futureSlotTimestamp.add(OFFSET_HOURS, 'hour');
-        logger.log(`[#${teacherId}] Monthly schedule already exists for ${futureSlotDisplay.format('YYYY-MM-DD HH:mm:ss')} - skipping.`);
+        logger.warn(`[#${teacherId}] Monthly schedule already exists for ${futureSlotDisplay.format('YYYY-MM-DD HH:mm:ss')} - skipping.`);
         continue;
       }
 
@@ -149,7 +175,7 @@ async function replenishMonthlySchedules(logger = console) {
 
       createdCount += 1;
     }
-  });
+  }), logger);
 
   logger.log(`[Monthly Schedule Replenisher] Created ${createdCount} monthly schedules (examined ${examinedCount}).`);
 }
