@@ -29,6 +29,20 @@ const teacherTemplatePath = path.join(__dirname, '..', 'meetingReminderTeacherTe
 const studentTemplate = fs.readFileSync(studentTemplatePath, 'utf-8');
 const teacherTemplate = fs.readFileSync(teacherTemplatePath, 'utf-8');
 
+function resolveCurrentTime(logger) {
+    const override = process.env.MEETING_REMINDER_FAKE_NOW;
+    if (!override) {
+        return new Date();
+    }
+    const parsed = new Date(override);
+    if (Number.isNaN(parsed.getTime())) {
+        const warn = typeof logger?.warn === 'function' ? logger.warn.bind(logger) : logger.log.bind(logger);
+        warn(`[Meeting Reminder] Ignoring invalid MEETING_REMINDER_FAKE_NOW value: ${override}`);
+        return new Date();
+    }
+    return parsed;
+}
+
 function populateTemplate(template, replacements) {
     let result = template;
     for (const [token, value] of Object.entries(replacements)) {
@@ -100,7 +114,7 @@ async function safeSendEmail(to, subject, html, logger, contextLabel) {
 }
 
 async function checkUpcomingMeetings(logger = console) {
-    const now = new Date();
+    const now = resolveCurrentTime(logger);
     console.log('checkUpcomingMeetings - now', now)
     const reminderWindowStart = new Date(now.getTime() + TWENTY_FOUR_HOURS_MS);
     const reminderWindowEnd = new Date(reminderWindowStart.getTime() + REMINDER_WINDOW_MS);
